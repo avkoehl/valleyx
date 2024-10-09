@@ -13,7 +13,17 @@ outputs:
     lines
     points
 """
+from typing import Optional
+from typing import Union
+
+import numpy as np
+import xarray as xr
 import pandas as pd
+import geopandas as gpd
+
+from valleyfloor.raster.vectorize import single_polygon_from_binary_raster
+from valleyfloor.geometry.utils import get_length_and_width
+
 from valleyfloor.geometry.cross_section import get_points_on_linestring
 from valleyfloor.geometry.cross_section import get_cross_section_points_from_points
 from valleyfloor.geometry.utils import get_length_and_width
@@ -21,7 +31,7 @@ from shapely.geometry import LineString
 from shapelysmooth import chaikin_smooth
 from shapelysmooth import taubin_smooth
 
-def network_xsections(flowlines: gpd.GeoSeries[LineString], grid:
+def network_xsections(flowlines: gpd.GeoDataFrame, grid:
                       Union[xr.Dataset, xr.DataArray], line_spacing: int,
                       line_width: int, point_spacing: int, subbasins:
                       Optional[xr.DataArray] = None) -> gpd.GeoDataFrame:
@@ -49,26 +59,24 @@ def network_xsections(flowlines: gpd.GeoSeries[LineString], grid:
     -------
     xsections: gpd.GeoDataFrame
     """
-    xsections = gdp.GeoDataFrame()
+    xsections = gpd.GeoDataFrame()
 
-    for streamID in flowlines['streamID']:
-        flowline = flowlines.loc['streamID' == streamID, 'geometry'].iloc[0]
+    for streamID in flowlines['Stream_ID']:
+        flowline = flowlines.loc[flowlines['Stream_ID'] == streamID, 'geometry'].iloc[0]
 
-        if subbasins not None:
-            binary = np.isfinite(grid)
-            poly = single_polygon_from_binary_raster(binary)
+        if subbasins is not None:
+            poly = single_polygon_from_binary_raster(subbasins == streamID)
             width = int(max(get_length_and_width(poly)) + 1)
             xspoints = flowline_xsections(flowline, line_spacing, width, point_spacing)
             xspoints = xspoints.clip(poly)
         else:
             xspoints = flowline_xsections(flowline, line_spacing, line_width, point_spacing)
+
+        xspoints['streamID'] = streamID
+        xsections = pd.concat([xsections, xspoints], ignore_index=True)
             
-
-    # concat
-
-    # sample rasters (observe points)
-
-    pass
+    xsections = observe_values(xsections, grid)
+    return xsections
 
 def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
                        int, point_spacing: int) -> gpd.GeoDataFrame:
@@ -94,7 +102,7 @@ def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
     flowline = chaikin_smooth(taubin_smooth(flowline))
 
     points = get_points_on_linestring(flowline, line_spacing) 
-    xspoints = get_cross_section_point_from_points(flowline, points,
+    xspoints = get_cross_section_points_from_points(flowline, points,
                                                    line_width, point_spacing)
     return xspoints
 
