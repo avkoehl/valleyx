@@ -18,7 +18,7 @@ from whitebox import WhiteboxTools
 from valleyfloor.utils import make_dir
 import xarray as xr
 
-from utils import pixel_to_point, translate_to_wbt, finite_unique
+from slopes.utils import pixel_to_point, translate_to_wbt, finite_unique
 
 def label_subbasins(flow_dir: xr.DataArray, flow_acc: xr.DataArray, flow_paths:
               xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
@@ -65,6 +65,18 @@ def label_subbasins(flow_dir: xr.DataArray, flow_acc: xr.DataArray, flow_paths:
         subbasins = raster.squeeze().copy()
 
     shutil.rmtree(temp_dir)
+
+    # need to relabel the sections of subbasin to match the flowpaths
+    mapping = {}
+    ind = 1 # subbasins starts at 1 from whiteboxtools
+    for streamID in finite_unique(flow_paths):
+        mapping[ind+.1] = streamID
+        ind += 1
+    subbasins = subbasins + .1
+
+    for key,value in mapping.items():
+        subbasins.data[subbasins == key] = value
+
     return subbasins
 
 
