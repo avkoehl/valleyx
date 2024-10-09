@@ -51,25 +51,29 @@ def network_xsections(flowlines: gpd.GeoSeries[LineString], grid:
     """
     xsections = gdp.GeoDataFrame()
 
-    for streamID in flowlines[
-    # iterate through flowlines
-    # for each flowline
-    #     if subbasins:
-    #        get new width foreach subbasin
-    #     flowline_xsections(flowline)
-    #     if subbasins:
-    #       clip
+    for streamID in flowlines['streamID']:
+        flowline = flowlines.loc['streamID' == streamID, 'geometry'].iloc[0]
+
+        if subbasins not None:
+            binary = np.isfinite(grid)
+            poly = single_polygon_from_binary_raster(binary)
+            width = int(max(get_length_and_width(poly)) + 1)
+            xspoints = flowline_xsections(flowline, line_spacing, width, point_spacing)
+            xspoints = xspoints.clip(poly)
+        else:
+            xspoints = flowline_xsections(flowline, line_spacing, line_width, point_spacing)
+            
 
     # concat
 
-    # sample rasters
+    # sample rasters (observe points)
 
     pass
 
 def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
                        int, point_spacing: int) -> gpd.GeoDataFrame:
     """
-    Create cross section profiles for a single linestring. 
+    Create cross section profiles for a single flowline. 
 
     Parameters
     ---------
@@ -89,9 +93,9 @@ def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
     flowline = flowline.simplify(20)
     flowline = chaikin_smooth(taubin_smooth(flowline))
 
-    points = get_points_on_linestring(flowline, line_spacing) xspoints =
-    get_cross_section_point_from_points(flowline, points, line_width,
-                                        point_spacing)
+    points = get_points_on_linestring(flowline, line_spacing) 
+    xspoints = get_cross_section_point_from_points(flowline, points,
+                                                   line_width, point_spacing)
     return xspoints
 
 def observe_values(points: gpd.GeoDataFrame, grid: xr.DataArray | xr.Dataset):

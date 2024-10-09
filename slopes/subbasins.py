@@ -34,7 +34,7 @@ def label_subbasins(flow_dir: xr.DataArray, flow_acc: xr.DataArray, flow_paths:
     flow_paths: xr.DataArray
         A raster representing the stream_network, each stream cell is labeled
         by stream_id, non stream cells are 0 or NoData
-    wbt: WhiteBoxTools
+    wbt: WhiteboxTools
         An instance of the WhiteboxTools class
 
     Returns
