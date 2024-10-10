@@ -31,7 +31,7 @@ from shapely.geometry import LineString
 from shapelysmooth import chaikin_smooth
 from shapelysmooth import taubin_smooth
 
-def network_xsections(flowlines: gpd.GeoDataFrame, grid:
+def network_xsections(flowlines: gpd.GeoSeries, grid:
                       Union[xr.Dataset, xr.DataArray], line_spacing: int,
                       line_width: int, point_spacing: int, subbasins:
                       Optional[xr.DataArray] = None) -> gpd.GeoDataFrame:
@@ -53,17 +53,28 @@ def network_xsections(flowlines: gpd.GeoDataFrame, grid:
     subbasins: Optional[xr.DataArray], optional
         An optional subbasin raster, if provided, this will make it so that the
         cross section widths are clipped to the subbasin dimensions for the
-        subbasin that matches with each flowline.
+        subbasin that matches with each flowline. Values must match the index
+        in flowlines series.
 
     Returns
     -------
-    xsections: gpd.GeoDataFrame
+    gpd.GeoDataFrame
+        A geodataframe with the following columns:
+        - "geom": Point, a point along the xsection profile
+        - "pointID": numeric,  cross section id specific to the flowline
+        - "streamID': numeric, from the index of flowlines
+        - "xsID": numeric,  cross section id specific to the flowline
+        - "alpha": numeric, represents the distance from the center point of the xsection
+
+        And the following additional columns:
+        - If a single raster is provided, a new column 'value' is added
+          containing the raster value at each point.
+        - If a stack of rasters is provided, a new columns is added for each
+          layer, named according to the 'datavar' attribute of the layer.
     """
     xsections = gpd.GeoDataFrame()
 
-    for streamID in flowlines['Stream_ID']:
-        flowline = flowlines.loc[flowlines['Stream_ID'] == streamID, 'geometry'].iloc[0]
-
+    for streamID, flowline in flowlines.items():
         if subbasins is not None:
             poly = single_polygon_from_binary_raster(subbasins == streamID)
             width = int(max(get_length_and_width(poly)) + 1)
@@ -76,6 +87,12 @@ def network_xsections(flowlines: gpd.GeoDataFrame, grid:
         xsections = pd.concat([xsections, xspoints], ignore_index=True)
             
     xsections = observe_values(xsections, grid)
+    xsections = xsections.sort_values(by=['streamID', 'xsID', 'alpha'])
+    xsections['pointID'] = np.arange(len(xsections))
+
+    starting_cols = ['geom', 'pointID', 'streamID', 'xsID', 'alpha']
+    cols = starting_cols + [col for col in xsections.columns if col not in starting_cols]
+    xsections = xsections[cols]
     return xsections
 
 def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
@@ -96,7 +113,11 @@ def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
 
     Returns
     -------
-    xspoints: gpd.GeoDataFrame
+    gpd.GeoDataFrame
+        A geodataframe with the following columns:
+        - "geom": Point, a point along the xsection profile
+        - "alpha": numeric, represents the distance from the center point of the xsection
+        - "xsID": numeric,  cross section id specific to the flowline
     """
     flowline = flowline.simplify(20)
     flowline = chaikin_smooth(taubin_smooth(flowline))
@@ -104,16 +125,30 @@ def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
     points = get_points_on_linestring(flowline, line_spacing) 
     xspoints = get_cross_section_points_from_points(flowline, points,
                                                    line_width, point_spacing)
+    xspoints = xspoints.rename(columns={'alpha': 'alpha', 'point': 'geom', 'cross_section_id': 'xsID'})
+    xspoints = xspoints[['geom', 'xsID', 'alpha']]
+    xspoints = xspoints.set_geometry('geom')
     return xspoints
 
 def observe_values(points: gpd.GeoDataFrame, grid: xr.DataArray | xr.Dataset):
     """
-    Get the values at a set of input points. Works on a single raster or a raster stack (xr.Dataset).
-    Will create a new column for each raster in the stack.
+    Add raster values to a GeoDataFrame containing point geometries.
 
     Parameters
     ----------
     points: gpd.GeoDataFrame
+        A GeoDataFrame with point geometries
+    grid: xr.DataArray or xr.Dataset
+        Either a single raster or a raster stack (Dataset)
+
+    Returns
+    -------
+        The input GeoDataFrame with additional columns:
+        - If a single raster is provided, a new column 'value' is added
+          containing the raster value at each point.
+        - If a stack of rasters is provided, a new columns is added for each
+          layer, named according to the 'datavar' attribute of the layer.
+    
     """
     xs = xr.DataArray(points.geometry.x.values, dims='z')
     ys = xr.DataArray(points.geometry.y.values, dims='z')
