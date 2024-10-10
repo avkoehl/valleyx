@@ -54,3 +54,34 @@ def finite_unique(raster: xr.DataArray) -> np.ndarray:
     uniques = np.unique(data)
     valid_uniques = uniques[np.isfinite(uniques)]
     return valid_uniques
+
+def observe_values(points: gpd.GeoDataFrame, grid: xr.DataArray | xr.Dataset):
+    """
+    Add raster values to a GeoDataFrame containing point geometries.
+
+    Parameters
+    ----------
+    points: gpd.GeoDataFrame
+        A GeoDataFrame with point geometries
+    grid: xr.DataArray or xr.Dataset
+        Either a single raster or a raster stack (Dataset)
+
+    Returns
+    -------
+        The input GeoDataFrame with additional columns:
+        - If a single raster is provided, a new column 'value' is added
+          containing the raster value at each point.
+        - If a stack of rasters is provided, a new columns is added for each
+          layer, named according to the 'datavar' attribute of the layer.
+    
+    """
+    xs = xr.DataArray(points.geometry.x.values, dims='z')
+    ys = xr.DataArray(points.geometry.y.values, dims='z')
+    values = grid.sel(x=xs, y=ys, method='nearest')
+
+    if isinstance(values, xr.Dataset):
+        for key in values:
+            points[key] = values[key].values
+    else:
+        points['value'] = values.values
+    return points

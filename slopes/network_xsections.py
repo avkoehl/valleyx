@@ -1,20 +1,4 @@
-"""
-Create cross section profiles for given raster(s) and flowlines
-
-inputs:
-    flowlines
-    grid
-    [subbasins]
-    line_spacing
-    line_width
-    point_spacing
-
-outputs:
-    lines
-    points
-"""
 from typing import Optional
-from typing import Union
 
 import numpy as np
 import xarray as xr
@@ -31,9 +15,8 @@ from shapely.geometry import LineString
 from shapelysmooth import chaikin_smooth
 from shapelysmooth import taubin_smooth
 
-def network_xsections(flowlines: gpd.GeoSeries, grid:
-                      Union[xr.Dataset, xr.DataArray], line_spacing: int,
-                      line_width: int, point_spacing: int, subbasins:
+def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
+                      int, point_spacing: int, subbasins:
                       Optional[xr.DataArray] = None) -> gpd.GeoDataFrame:
     """
     Create cross section profiles for a stream network and a given raster or stack of rasters.
@@ -42,8 +25,6 @@ def network_xsections(flowlines: gpd.GeoSeries, grid:
     ----------
     flowlines: gpd.GeoSeries[LineString]
         A series of flowline geometries
-    grid: xr.Dataset | xr.DataArray
-        A raster or stack of rasters to select values from for the cross section profiles
     line_spacing: int
         The distance between cross sections
     line_width: int
@@ -65,12 +46,6 @@ def network_xsections(flowlines: gpd.GeoSeries, grid:
         - "streamID': numeric, from the index of flowlines
         - "xsID": numeric,  cross section id specific to the flowline
         - "alpha": numeric, represents the distance from the center point of the xsection
-
-        And the following additional columns:
-        - If a single raster is provided, a new column 'value' is added
-          containing the raster value at each point.
-        - If a stack of rasters is provided, a new columns is added for each
-          layer, named according to the 'datavar' attribute of the layer.
     """
     xsections = gpd.GeoDataFrame()
 
@@ -86,13 +61,11 @@ def network_xsections(flowlines: gpd.GeoSeries, grid:
         xspoints['streamID'] = streamID
         xsections = pd.concat([xsections, xspoints], ignore_index=True)
             
-    xsections = observe_values(xsections, grid)
     xsections = xsections.sort_values(by=['streamID', 'xsID', 'alpha'])
     xsections['pointID'] = np.arange(len(xsections))
 
-    starting_cols = ['geom', 'pointID', 'streamID', 'xsID', 'alpha']
-    cols = starting_cols + [col for col in xsections.columns if col not in starting_cols]
-    xsections = xsections[cols]
+    order = ['geom', 'pointID', 'streamID', 'xsID', 'alpha']
+    xsections = xsections[order]
     return xsections
 
 def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
