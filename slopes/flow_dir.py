@@ -33,7 +33,7 @@ DIRMAPS = {
             }
         }
 
-def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> gpd.GeoSeries
+def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> gpd.GeoSeries:
     """
     Traces the flowpath from a given cell.
 
