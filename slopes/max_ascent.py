@@ -43,4 +43,5 @@ def create_max_ascent_graph_numba(dem: xr.DataArray):
     iterate through each cell, add edge to neighbor of positive max elevation change
     create csgraph
     """
+    pass
 
