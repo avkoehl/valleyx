@@ -12,8 +12,6 @@ from valleyfloor.geometry.cross_section import get_points_on_linestring
 from valleyfloor.geometry.cross_section import get_cross_section_points_from_points
 from valleyfloor.geometry.utils import get_length_and_width
 from shapely.geometry import LineString
-from shapelysmooth import chaikin_smooth
-from shapelysmooth import taubin_smooth
 
 def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
                       int, point_spacing: int, subbasins:
@@ -92,9 +90,6 @@ def flowline_xsections(flowline: LineString, line_spacing: int, line_width:
         - "alpha": numeric, represents the distance from the center point of the xsection
         - "xsID": numeric,  cross section id specific to the flowline
     """
-    flowline = flowline.simplify(20)
-    flowline = chaikin_smooth(taubin_smooth(flowline))
-
     points = get_points_on_linestring(flowline, line_spacing) 
     xspoints = get_cross_section_points_from_points(flowline, points,
                                                    line_width, point_spacing)
