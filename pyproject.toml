@@ -21,6 +21,7 @@ ipython = "^8.28.0"
 valleyfloor = { git = 'ssh://git@github.com/avkoehl/valleyfloor.git', branch = 'main' }
 shapelysmooth = "^0.2.1"
 scikit-learn = "^1.5.2"
+rdp = "^0.8"
 
 [build-system]
 requires = ["poetry-core"]
