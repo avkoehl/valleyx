@@ -7,6 +7,11 @@ import rioxarray as rxr
 import xarray as xr
 from shapely.geometry import Point
 
+def slope():
+    """
+    wrapper around WBT slope method
+    """
+
 def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:
     """
     Converts the row and column of a raster array to a geographic Point.
