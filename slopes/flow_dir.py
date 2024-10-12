@@ -1,5 +1,8 @@
 import os
 
+import numba
+from numba.typed import Dict
+import numpy as np
 import geopandas as gpd
 import rioxarray as rxr
 from shapely.geometry import Point
@@ -33,6 +36,26 @@ DIRMAPS = {
             }
         }
 
+@numba.njit
+def _trace_flowpath_numba(current_row, current_col, flow_dir_values, dirmap):
+    nrows, ncols = flow_dir_values.shape
+    path = [(current_row, current_col)]
+    while True:
+        current_direction = flow_dir_values[current_row, current_col]
+        if current_direction == 0:
+            break
+
+        drow, dcol = dirmap[current_direction]
+        next_row = current_row + drow
+        next_col = current_col + dcol
+
+        if not (0 <= next_row < nrows and 0 <= next_col < ncols):
+            break
+
+        current_row, current_col = next_row, next_col
+        path.append((next_row, next_col))
+    return path
+
 def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> gpd.GeoSeries:
     """
     Traces the flowpath from a given cell.
@@ -54,23 +77,12 @@ def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> 
         Series of point geometries representing the path
     """
     current_row, current_col = row, col
-    nrows, ncols = flow_dir.shape
-    path = [(row, col)]
 
-    while True:
-        current_direction = flow_dir.data[current_row, current_col]
-        if current_direction == 0:
-            break
+    d = Dict() # numba typed dict
+    for k,v in dirmap.items():
+        d[np.float32(k)] = np.int64(v)
 
-        drow, dcol = dirmap[current_direction]
-        next_row = current_row + drow
-        next_col = current_col + dcol
-
-        if not (0 <= next_row < nrows and 0 <= next_col < ncols):
-            break
-
-        current_row, current_col = next_row, next_col
-        path.append((next_row, next_col))
+    path = _trace_flowpath_numba(np.int64(row), np.int64(col), flow_dir.values, d)
 
     result = [pixel_to_point(flow_dir, row,col) for row,col in path]
     result = gpd.GeoSeries(result, crs=flow_dir.rio.crs)
