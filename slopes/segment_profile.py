@@ -15,6 +15,8 @@ import ruptures as rpt
 from scipy import signal
 from rdp import rdp
 
+import matplotlib.pyplot as plt
+
 def mean_shift(series, model='l2', pen=5):
     method = rpt.Pelt(model=model).fit(series)
     result = method.predict(pen=pen)
@@ -68,10 +70,10 @@ def plot_segments(alpha_series, value_series, labels, bps):
 
     colors = ['white', 'lightblue']
     for i in range(len(bps) - 1):
-            plt.axvspan(bps[i], bps[i+1], facecolor=colors[i % 2], alpha=0.5)
+            plt.axvspan(alpha_series.iloc[bps[i]], alpha_series.iloc[bps[i+1]], facecolor=colors[i % 2], alpha=0.5)
 
     for bp in bps[1:-1]:
-        plt.axvline(x=alpha_series[bp], linestyle='--', color='red', linewidth=1)
+        plt.axvline(x=alpha_series.iloc[bp], linestyle='--', color='red', linewidth=1)
 
     return fig, ax
     
