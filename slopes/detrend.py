@@ -1,13 +1,19 @@
+import os
+import sys
+
+import rioxarray as rxr
+from whiteboxtools import WhiteboxTools
+
+def detrend(dem, flow_paths, wbt, method=""):
 """
+Detrend a digital elevation model by height above nearest drainage
+
+4 options for the method:
     HAND_steepest as elevation above nearest stream wbt max flow_dir
     HAND_euclidean as elevation above nearest stream based just on euclidean distance
     HAND_dinf as elevation above nearest stream wbt dinfinity flow_dir
     HAND_cost as cost accumulation accumulated change in elevation 
-
-and just a helper function for slope wbt wrapper  (move these to their own functions?)
 """
-
-def detrend(dem, flow_paths, wbt=None, method=""):
     method_list = ["hand_steepest", "hand_euclidean", "hand_dinf", "hand_cost"]
     if method not in method_list:
         sys.exit(f"choose valid method from {method_list}")
@@ -21,9 +27,11 @@ def detrend(dem, flow_paths, wbt=None, method=""):
     elif method == "hand_cost":
         graph = cost_graph(dem)
         hand = hand_cost(dem, flow_paths, graph)
-    return hand
 
-def hand_steepest(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray():
+    slope_of_hand = wbt_slope(hand, wbt)
+    return hand, slope_of_hand
+
+def hand_steepest(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
     """ 
     Wrapper around elevation above nearest stream WBT method.
 
@@ -58,7 +66,7 @@ def hand_steepest(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTool
     os.remove(files['temp_flowpaths'])
     return hand
 
-def hand_euclidean(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray():
+def hand_euclidean(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
     """ 
     Wrapper around elevation above nearest stream euclidean WBT method.
 
@@ -71,6 +79,11 @@ def hand_euclidean(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxToo
         A raster where nonzero values are flow paths that represent the stream path
     wbt: WhiteboxTools
 		An instance of the whitebox tools class
+
+    Returns
+    -------
+    xr.DataArray
+        A dem of elevation above stream
 
     """
     files = {'dem': os.path.join(wbt.work_dir, 'temp_dem.tif'),
@@ -132,3 +145,7 @@ def hand_cost(dem: xr.DataArray, graph: csr_matrix) -> xr.DataArray:
     hand = dem - stream_elevations + dem.min().item()
     return hand
 
+def wbt_slope(dem: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
+    """
+    """
+    pass
