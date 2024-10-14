@@ -1,12 +1,18 @@
 import os
 import sys
 
+import numba
+import numpy as np
 import rioxarray as rxr
-from whiteboxtools import WhiteboxTools
+import xarray as xr
+from whitebox import WhiteboxTools
+from scipy.sparse import csr_matrix
+from scipy.sparse.csgraph import dijkstra
 
-def detrend(dem, flow_paths, wbt, method=""):
+def detrend(dem, flow_paths, wbt, method="hand_steepest"):
 """
 Detrend a digital elevation model by height above nearest drainage
+dem should be hydrologically conditioned for steepest, dinf, or cost
 
 4 options for the method:
     HAND_steepest as elevation above nearest stream wbt max flow_dir
@@ -25,7 +31,7 @@ Detrend a digital elevation model by height above nearest drainage
     elif method == "hand_dinf":
         sys.exit("not yet implemented")
     elif method == "hand_cost":
-        graph = cost_graph(dem)
+        graph = construct_cost_graph(dem)
         hand = hand_cost(dem, flow_paths, graph)
 
     slope_of_hand = wbt_slope(hand, wbt)
@@ -51,8 +57,8 @@ def hand_steepest(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTool
     files = {name:file for name,file in zip(names,fnames)}
 
     # save conditioned and flowpaths to temp files
-    conditioned_dem.rio.to_raster(files['temp_conditioned_dem'])
-    flowpaths.rio.to_raster(files['temp_flowpaths'])
+    dem.rio.to_raster(files['temp_conditioned_dem'])
+    flow_paths.rio.to_raster(files['temp_flowpaths'])
 
     wbt.elevation_above_stream(
             files['temp_conditioned_dem'],
@@ -111,7 +117,7 @@ def hand_dinf():
     TODO: implement with numba
     """
 
-def hand_cost(dem: xr.DataArray, graph: csr_matrix) -> xr.DataArray:
+def hand_cost(dem: xr.DataArray, flow_paths: xr.DataArray,  graph: csr_matrix) -> xr.DataArray:
     """
     compute elevation above nearest stream based on a cost graph. Finds the
     stream point with the lowest cost path for each cell. Then detrends from
@@ -132,20 +138,87 @@ def hand_cost(dem: xr.DataArray, graph: csr_matrix) -> xr.DataArray:
         A raster of detrended elevations
     """
 
+    ids = np.arange(flow_paths.size).reshape(flow_paths.shape)
+    source_nodes = ids[flow_paths > 0]
+
     # get basins
-    costs, predecessors, basins = dijkstra(graph, source_nodes,
+    costs, predecessors, basins = dijkstra(graph, directed=True, indices=source_nodes,
                                            return_predecessors=True,
-                                           directed=True, min_only=True)
+                                            min_only=True)
     basins = basins.reshape(dem.shape)
 
     # get basin elevation values
-    stream_elevations = 
+    stream_elevations = dem.copy()
+    stream_elevations.data = np.zeros_like(dem.data)
+
+    for cell_id in np.unique(basins):
+        row, col = np.unravel_index(cell_id, basins.shape)
+        elev = dem.data[row, col]
+        stream_elevations.data[basins == cell_id] = elev
 
     # subtract basin elevation from each cell in dem to get hand
     hand = dem - stream_elevations + dem.min().item()
     return hand
 
+
 def wbt_slope(dem: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
     """
+    compute slope of surface, wrapper around wbt
+
+    Parameters
+    ----------
+    dem: xr.DataArray
+        A raster of elevation values
+
+    Returns
+    -------
+    xr.DataArray
+        A raster of slope values in degrees
     """
-    pass
+    files ={
+            'dem': os.path.join(wbt.work_dir, 'temp_dem.tif'),
+            'slope': os.path.join(wbt.work_dir, 'hslope.tif')}
+    dem.rio.to_raster(files['dem'])
+
+    wbt.slope(files['dem'], files['slope'], units='degrees')
+
+    with rxr.open_rasterio(files['slope'], masked=True) as raster:
+        slope_of_hand = raster.squeeze().copy()
+
+    os.remove(files['dem'])
+    return slope_of_hand
+
+def construct_cost_graph(dem: xr.DataArray) -> csr_matrix:
+    rows, cols, data = _numba_delta_elevation_cost(dem.data) # row is id of source, col is id of target, data is 1
+    graph = csr_matrix((data, (rows, cols)), shape=(dem.size,dem.size))
+    return graph
+
+@numba.njit
+def _numba_delta_elevation_cost(dem_data: np.ndarray):
+    nrows, ncols = dem_data.shape
+    ids = np.arange(dem_data.size).reshape(dem_data.shape)
+
+    rows = []
+    cols = []
+    data = []
+    for r in range(nrows):
+        for c in range(ncols):
+
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    if dx == 0 and dy == 0:
+                        continue
+                    nr = r + dy
+                    nc = c + dx
+
+                    if 0 <= nr < nrows and 0 <= nc <= ncols:
+                        cost = np.abs(dem_data[nr, nc] - dem_data[r, c])
+
+                        if np.isfinite(cost):
+                            if dx != 0 and dy != 0:
+                                cost = cost / 1.41 # diagonal
+
+                            rows.append(ids[r,c])
+                            cols.append(ids[nr,nc])
+                            data.append(cost)
+    return rows, cols, data
