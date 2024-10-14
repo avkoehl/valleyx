@@ -8,20 +8,40 @@ import xarray as xr
 from whitebox import WhiteboxTools
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
+from pysheds.grid import Grid
+from pysheds.view import Raster 
+from pysheds.view import ViewFinder
+from pysheds._sgrid import _angle_to_d8_numba
+from pysheds._sgrid import _dinf_hand_iter_numba
+from pysheds._sgrid import _assign_hand_heights_numba 
+from pysheds._sgrid import _mfd_hand_iter_numba
 
-from slopes.utils import rioxarray_to_pysheds
-from slopes.utils import pysheds_to_rioxarray
+from valleyfloor.utils import setup_wbt
+
+dem = rxr.open_rasterio("../working_dir/conditioned_dem.tif", masked=True).squeeze()
+flow_paths = rxr.open_rasterio("../working_dir/flowpaths.tif", masked=True).squeeze()
+wbt = setup_wbt("~/opt/WBT", "../working_dir")
 
 def detrend(dem, flow_paths, wbt, method="hand_steepest"):
 """
 Detrend a digital elevation model by height above nearest drainage
-dem should be hydrologically conditioned for steepest, dinf, or cost
+dem should be hydrologically conditioned for steepest, dinf, mfd, or cost
 
-4 options for the method:
-    HAND_steepest as elevation above nearest stream wbt max flow_dir
-    HAND_euclidean as elevation above nearest stream based just on euclidean distance
-    HAND_dinf as elevation above nearest stream wbt dinfinity flow_dir
-    HAND_cost as cost accumulation accumulated change in elevation 
+Parameters
+----------
+dem: xr.DataArray
+flow_paths: xr.DataArray
+wbt: WhiteboxTools
+method: str
+    'HAND_steepest' as elevation above nearest stream wbt max flow_dir
+    'HAND_euclidean' as elevation above nearest stream based just on euclidean distance
+    'HAND_dinf' as elevation above nearest stream dinfinity flow dir
+    'HAND_multi' as elevation above nearest stream mfd flow dir
+    'HAND_cost' as cost accumulation accumulated change in elevation 
+
+Returns
+-------
+tuple(xr.DataArray, xr.DataArray) - hand and slope of hand
 """
     method_list = ["hand_steepest", "hand_euclidean", "hand_dinf", "hand_multi", "hand_cost"]
     if method not in method_list:
@@ -30,17 +50,18 @@ dem should be hydrologically conditioned for steepest, dinf, or cost
     if method == "hand_steepest":
         hand = hand_steepest(dem, flow_paths, wbt)
     elif method == "hand_euclidean":
+        raise NotImplementedError("have not thought this one through")
         hand = hand_euclidean(dem, flow_paths, wbt)
     elif method == "hand_dinf":
-        sys.exit("not yet implemented")
+        hand = hand_pysheds(dem, flow_paths, routing_method='dinf')
     elif method == "hand_multi":
-        sys.exit("not yet implemented")
+        hand = hand_pysheds(dem, flow_paths, routing_method='mfd')
     elif method == "hand_cost":
         graph = construct_cost_graph(dem)
         hand = hand_cost(dem, flow_paths, graph)
 
     slope_of_hand = wbt_slope(hand, wbt)
-    return hand, slope_of_hand
+    return (hand, slope_of_hand)
 
 def hand_steepest(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
     """ 
@@ -102,7 +123,10 @@ def hand_euclidean(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxToo
              'hand': os.path.join(wbt.work_dir, 'hand_e.tif')}
 
     dem.rio.to_raster(files['dem'])
-    flow_paths.rio.to_raster(files['flowpaths'])
+
+    # see https://github.com/jblindsay/whitebox-tools/issues/245 
+    (flow_paths > 1).astype(np.uint8).rio.to_raster(files['flowpaths'])
+    #flow_paths.rio.to_raster(files['flowpaths'])
 
     wbt.elevation_above_stream_euclidean(
             files['dem'],
@@ -122,14 +146,53 @@ def hand_pysheds(dem, flow_paths, routing_method):
     compute elevation above nearest stream using dinf flow direction
     # use pysheds
     """
-    grid, pysheds_dem = rioxarray_to_pysheds(dem)
-    grid2, pysheds_flow_paths = rioxarray_to_pysheds(flow_paths)
-    
+    def xarray_to_pysheds(raster: xr.DataArray) -> Raster:
+        view = ViewFinder(affine=raster.rio.transform(), shape=raster.shape, crs=raster.rio.crs, nodata=raster.rio.nodata)
+        return Raster(raster.data, viewfinder=view)
+
+    def pysheds_to_rioxarray(raster: Raster, grid: Grid) -> xr.DataArray:
+        da = xr.DataArray(
+                data = raster,
+                dims = ['y','x'],
+                coords = {
+                    "y": np.linspace(
+                        grid.bbox[3], grid.bbox[1], raster.shape[0]),
+                    "x": np.linspace(
+                        grid.bbox[0], grid.bbox[2], raster.shape[1])
+                    }
+                )
+        da.rio.write_transform(grid.affine, inplace=True)
+        da.rio.write_crs(grid.crs.to_string(), inplace=True)
+        da.rio.write_nodata(grid.nodata, inplace=True)
+        return da
+
+    pysheds_dem = xarray_to_pysheds(dem)
+    pysheds_flowpaths = xarray_to_pysheds(flow_paths)
+    grid = Grid.from_raster(pysheds_dem)
+    mask = pysheds_flow_paths > 1
+
     # let pysheds compute flowdir based on routing method
-    fdir = grid.flowdir(pysheds_dem, routing=routing_method, nodata_out=np.float32(np.nan))
+    if routing_method == 'dinf':
+        fdir = grid.flowdir(pysheds_dem, routing='dinf', nodata_out=np.float64(-1))
+        dirmap = (64, 128, 1, 2, 4, 8, 16, 32)
+        nodata_cells = grid._get_nodata_cells(fdir)
+
+        fdir_0, fdir_1, prop_0, prop_1 = _angle_to_d8_numba(fdir, (64,128,1,2,4,8,16,32), nodata_cells)
+        dirleft_0, dirright_0, dirtop_0, dirbottom_0 = grid._pop_rim(fdir_0,nodata=0)
+        dirleft_1, dirright_1, dirtop_1, dirbottom_1 = grid._pop_rim(fdir_1,nodata=0)
+        maskleft, maskright, masktop, maskbottom = grid._pop_rim(mask, nodata=False)
+        hand_idx = _dinf_hand_iter_numba(fdir_0, fdir_1, mask, dirmap)
+    elif routing_method == 'mfd':
+        fdir = grid.flowdir(pysheds_dem, routing='mfd', nodata_out=np.float64(-1))
+        nodata_cells = grid._get_nodata_cells(fdir)
+        dirleft, dirright, dirtop, dirbottom = grid._pop_rim(fdir, nodata=0.)
+        maskleft, maskright, masktop, maskbottom = grid._pop_rim(mask, nodata=False)
+        hand_idx = _mfd_hand_iter_numba(fdir, mask)
+    else:
+        raise ValueError("routing_method must be 'dinf' or 'mfd'")
 
 
-    hand = grid.compute_hand(fdir, pysheds_dem, pysheds_flow_paths>1, routing=routing_method)
+    hand = _assign_hand_heights_numba(hand_idx, pysheds_dem, np.float64(np.nan))
     hand = pysheds_to_rioxarray(hand, grid)
     return hand
 
