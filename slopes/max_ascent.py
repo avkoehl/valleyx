@@ -12,6 +12,7 @@ import pandas as pd
 import geopandas as gpd
 import xarray as xr
 from whitebox import WhiteboxTools
+from skimage.morphology import isotropic_dilation
 
 from slopes.flow_dir import flowdir_wbt
 from slopes.flow_dir import trace_flowpath
@@ -48,7 +49,8 @@ def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: in
     # trace paths along that flowdirection raster for each stream
     dem = invert_dem(dem)
     fdir = flowdir_wbt(dem, wbt)
-    stream_points = sample_points_on_flowpaths(flow_paths, num_points)
+    #stream_points = sample_points_on_flowpaths(flow_paths, num_points)
+    stream_points = sample_points_around_flowpaths(flow_paths, num_points)
 
     results = [] 
     for row in stream_points.itertuples(index=False):
@@ -64,6 +66,35 @@ def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: in
     results['pointID'] = np.arange(len(results))
     return results
 
+def sample_points_around_flowpaths(flow_paths: xr.DataArray, num_points: int) -> list[tuple]:
+    """
+    Parameters
+    ----------
+    flow_paths: xr.DataArray
+        A raster representing the flow paths
+    num_points: 
+        Number of points to sample from each flow path
+    Returns
+    -------
+    pd.DataFrame:
+        A dataframe with the following columns:
+        - "streamID" numeric, flowpath ID
+        - "row" numeric, row index of point 
+        - "col" numeric, col index of point
+    """
+    points = pd.DataFrame()
+    for streamID in finite_unique(flow_paths):
+        dilated = isotropic_dilation(flow_paths == streamID, radius=1)
+        dilated[flow_paths == streamID] = False
+        cells = np.argwhere(dilated)
+        sample_size = min(len(cells), num_points)
+        sampled = random.sample(cells.tolist(), sample_size)
+        rows, cols = zip(*sampled)
+        stream_df = pd.DataFrame({'streamID': streamID, 'row': rows, 'col': cols})
+        points = pd.concat([points, stream_df])
+
+    return points
+
 def sample_points_on_flowpaths(flow_paths: xr.DataArray, num_points: int) -> list[tuple]:
     """
     Parameters
@@ -71,7 +102,7 @@ def sample_points_on_flowpaths(flow_paths: xr.DataArray, num_points: int) -> lis
     flow_paths: xr.DataArray
         A raster representing the flow paths
     num_points: 
-        Number of points to samplef rom each flow path
+        Number of points to sample from each flow path
     Returns
     -------
     pd.DataFrame:
