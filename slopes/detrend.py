@@ -9,6 +9,9 @@ from whitebox import WhiteboxTools
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import dijkstra
 
+from slopes.utils import rioxarray_to_pysheds
+from slopes.utils import pysheds_to_rioxarray
+
 def detrend(dem, flow_paths, wbt, method="hand_steepest"):
 """
 Detrend a digital elevation model by height above nearest drainage
@@ -20,7 +23,7 @@ dem should be hydrologically conditioned for steepest, dinf, or cost
     HAND_dinf as elevation above nearest stream wbt dinfinity flow_dir
     HAND_cost as cost accumulation accumulated change in elevation 
 """
-    method_list = ["hand_steepest", "hand_euclidean", "hand_dinf", "hand_cost"]
+    method_list = ["hand_steepest", "hand_euclidean", "hand_dinf", "hand_multi", "hand_cost"]
     if method not in method_list:
         sys.exit(f"choose valid method from {method_list}")
 
@@ -29,6 +32,8 @@ dem should be hydrologically conditioned for steepest, dinf, or cost
     elif method == "hand_euclidean":
         hand = hand_euclidean(dem, flow_paths, wbt)
     elif method == "hand_dinf":
+        sys.exit("not yet implemented")
+    elif method == "hand_multi":
         sys.exit("not yet implemented")
     elif method == "hand_cost":
         graph = construct_cost_graph(dem)
@@ -111,11 +116,22 @@ def hand_euclidean(dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxToo
     os.remove(files['flowpaths'])
     return hand
 
-def hand_dinf():
+def hand_pysheds(dem, flow_paths, routing_method):
     """
+    conditioned dem
     compute elevation above nearest stream using dinf flow direction
-    TODO: implement with numba
+    # use pysheds
     """
+    grid, pysheds_dem = rioxarray_to_pysheds(dem)
+    grid2, pysheds_flow_paths = rioxarray_to_pysheds(flow_paths)
+    
+    # let pysheds compute flowdir based on routing method
+    fdir = grid.flowdir(pysheds_dem, routing=routing_method, nodata_out=np.float32(np.nan))
+
+
+    hand = grid.compute_hand(fdir, pysheds_dem, pysheds_flow_paths>1, routing=routing_method)
+    hand = pysheds_to_rioxarray(hand, grid)
+    return hand
 
 def hand_cost(dem: xr.DataArray, flow_paths: xr.DataArray,  graph: csr_matrix) -> xr.DataArray:
     """

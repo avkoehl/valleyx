@@ -770,6 +770,17 @@ files = [
 ]
 
 [[package]]
+name = "geojson"
+version = "3.1.0"
+description = "Python bindings and utilities for GeoJSON"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "geojson-3.1.0-py3-none-any.whl", hash = "sha256:68a9771827237adb8c0c71f8527509c8f5bef61733aa434cefc9c9d4f0ebe8f3"},
+    {file = "geojson-3.1.0.tar.gz", hash = "sha256:58a7fa40727ea058efc28b0e9ff0099eadf6d0965e04690830208d3ef571adac"},
+]
+
+[[package]]
 name = "geopandas"
 version = "1.0.1"
 description = "Geographic pandas extensions"
@@ -1488,6 +1499,17 @@ win32-setctime = {version = ">=1.0.0", markers = "sys_platform == \"win32\""}
 
 [package.extras]
 dev = ["Sphinx (==7.2.5)", "colorama (==0.4.5)", "colorama (==0.4.6)", "exceptiongroup (==1.1.3)", "freezegun (==1.1.0)", "freezegun (==1.2.2)", "mypy (==v0.910)", "mypy (==v0.971)", "mypy (==v1.4.1)", "mypy (==v1.5.1)", "pre-commit (==3.4.0)", "pytest (==6.1.2)", "pytest (==7.4.0)", "pytest-cov (==2.12.1)", "pytest-cov (==4.1.0)", "pytest-mypy-plugins (==1.9.3)", "pytest-mypy-plugins (==3.0.0)", "sphinx-autobuild (==2021.3.14)", "sphinx-rtd-theme (==1.3.0)", "tox (==3.27.1)", "tox (==4.11.0)"]
+
+[[package]]
+name = "looseversion"
+version = "1.3.0"
+description = "Version numbering for anarchists and software realists"
+optional = false
+python-versions = "*"
+files = [
+    {file = "looseversion-1.3.0-py2.py3-none-any.whl", hash = "sha256:781ef477b45946fc03dd4c84ea87734b21137ecda0e1e122bcb3c8d16d2a56e0"},
+    {file = "looseversion-1.3.0.tar.gz", hash = "sha256:ebde65f3f6bb9531a81016c6fef3eb95a61181adc47b7f949e9c0ea47911669e"},
+]
 
 [[package]]
 name = "markupsafe"
@@ -2353,6 +2375,32 @@ files = [
 
 [package.dependencies]
 certifi = "*"
+
+[[package]]
+name = "pysheds"
+version = "0.4"
+description = "🌎 Simple and fast watershed delineation in python."
+optional = false
+python-versions = "*"
+files = [
+    {file = "pysheds-0.4.tar.gz", hash = "sha256:039d89e3f798e75649b46bc01ca04f0465ea092ba58f63de124cf6bd5cfa1a4b"},
+]
+
+[package.dependencies]
+affine = "*"
+geojson = "*"
+looseversion = "*"
+numba = "*"
+numpy = "*"
+pandas = "*"
+pyproj = "*"
+rasterio = ">=1"
+scikit-image = "*"
+scipy = "*"
+
+[package.extras]
+dev = ["pytest", "pytest-cov"]
+recipes = ["geopandas", "ipython", "matplotlib", "seaborn"]
 
 [[package]]
 name = "python-dateutil"
@@ -3654,4 +3702,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "5364b70351d2dfe1998092a504692f4f41e03542ac86fbc14e24d5970fc041f3"
+content-hash = "e353b71924df11e5095873ea316706d50afe1080db9f315522ad06f64a86a1fc"

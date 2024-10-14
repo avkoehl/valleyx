@@ -1,5 +1,8 @@
 import os
 
+from pysheds.grid import Grid
+from pysheds.view import Raster
+from pysheds.view import ViewFinder
 from affine import Affine
 import numpy as np
 import geopandas as gpd
@@ -7,7 +10,36 @@ import rioxarray as rxr
 import xarray as xr
 from shapely.geometry import Point
 
-def slope():
+def rioxarray_to_pysheds(raster: xr.DataArray) -> tuple[Grid, Raster]:
+
+    view = ViewFinder(affine=raster.rio.transform(), 
+                      shape = raster.shape,
+                      nodata = raster.rio.nodata,
+                      crs = raster.rio.crs)
+    pysheds_raster = Raster(raster.data, viewfinder=view)
+
+    grid = Grid.from_raster(pysheds_raster)
+    return (grid, pysheds_raster)
+
+def pysheds_to_rioxarray(raster: Raster, grid: Grid) -> xr.DataArray:
+    da = xr.DataArray(
+            data = raster,
+            dims = ['y','x'],
+            coords = {
+                "y": np.linspace(
+                    grid.bbox[3], grid.bbox[1], raster.shape[0]),
+                "x": np.linspace(
+                    grid.bbox[0], grid.bbox[2], raster.shape[1])
+                }
+            )
+    da.rio.write_transform(grid.affine, inplace=True)
+    da.rio.write_crs(grid.crs.to_string(), inplace=True)
+    da.rio.write_nodata(grid.nodata, inplace=True)
+    return da
+
+
+
+def wbt_slope():
     """
     wrapper around WBT slope method
     """
