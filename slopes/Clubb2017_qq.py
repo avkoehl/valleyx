@@ -1,8 +1,11 @@
+"""
+https://esurf.copernicus.org/articles/5/369/2017/esurf-5-369-2017.pdf
+"""
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
 
-def Clubb2017_qq_threshold(raster, threshold=0.01, plot=False, ax=None):
+def Clubb2017_qq_threshold(raster, diff_threshold=0.01, plot=False, ax=None):
     values = raster.data.flatten()
     values = values[np.isfinite(values)]
     values = np.sort(values)
@@ -13,22 +16,21 @@ def Clubb2017_qq_threshold(raster, threshold=0.01, plot=False, ax=None):
     osm, osr = stats.probplot(values, dist=norm_dist, plot=None, fit=False)
 
     diff = np.abs(osr - osm) / (values.max() - values.min())
-    inds = diff < threshold
+    inds = diff < diff_threshold
 
     ind = None
+    value_threshold = None
     if inds.sum():
-        ind = np.argwhere(inds)[0].item()
+        ind = np.argmax(inds)
+        value_threshold =  values[ind]
 
     if plot:
-        ax = plot_qq(osm, osr, norm, ind, ax=ax)
-
-    if ind is not None:
-        thresh =  values[ind]
+        ax = plot_qq(osm, osr, norm_dist, ind, ax=ax)
 
     if ax is not None:
-        return ax, thresh
+        return ax, value_threshold
     else:
-        return thresh
+        return value_threshold
     
 
 def norm_dist_from_percentiles(values, p1, p2):
@@ -45,8 +47,19 @@ def plot_qq(osm, osr, norm, ind=None, ax=None):
     if ax is None:
         fig, ax = plt.subplots()
 
-    ax.plot((osm - norm.mean())/norm.std(), osr, 'o', label='empirical')
+    ax.plot((osm - norm.mean())/norm.std(), osr, 'o', label='empirical', markersize=2)
     ax.plot((osm - norm.mean())/norm.std(), osm, 'r--', label='45 degree line')
-    if value is not None:
-        ax.axvline(x=(osr[ind] - norm.mean())/norm.std(), color='g', linestyle='--', label= f'{lowest:.2f}')
+
+    if ind is not None:
+        x_val = (osr[ind] - norm.mean()) / norm.std()
+        ax.axvline(x=x_val, color='b', linestyle='--')
+
+        ax.set_xlim(left=ax.get_xlim()[0], right=ax.get_xlim()[1])
+        ax.set_ylim(ax.get_ylim()[0], ax.get_ylim()[1])
+
+        ax.fill_betweenx(ax.get_ylim(), ax.get_xlim()[0], x_val, color='lightblue', alpha=0.4)
+        #ax.fill_betweenx(ax.get_ylim(), ax.get_xlim()[1], color='white')
+
+    ax.grid(True)
+
     return ax
