@@ -18,31 +18,28 @@ from pysheds._sgrid import _mfd_hand_iter_numba
 
 from valleyfloor.utils import setup_wbt
 
-dem = rxr.open_rasterio("../working_dir/conditioned_dem.tif", masked=True).squeeze()
-flow_paths = rxr.open_rasterio("../working_dir/flowpaths.tif", masked=True).squeeze()
-wbt = setup_wbt("~/opt/WBT", "../working_dir")
 
 def detrend(dem, flow_paths, wbt, method="hand_steepest"):
-"""
-Detrend a digital elevation model by height above nearest drainage
-dem should be hydrologically conditioned for steepest, dinf, mfd, or cost
-
-Parameters
-----------
-dem: xr.DataArray
-flow_paths: xr.DataArray
-wbt: WhiteboxTools
-method: str
-    'HAND_steepest' as elevation above nearest stream wbt max flow_dir
-    'HAND_euclidean' as elevation above nearest stream based just on euclidean distance
-    'HAND_dinf' as elevation above nearest stream dinfinity flow dir
-    'HAND_multi' as elevation above nearest stream mfd flow dir
-    'HAND_cost' as cost accumulation accumulated change in elevation 
-
-Returns
--------
-tuple(xr.DataArray, xr.DataArray) - hand and slope of hand
-"""
+    """
+    Detrend a digital elevation model by height above nearest drainage
+    dem should be hydrologically conditioned for steepest, dinf, mfd, or cost
+    
+    Parameters
+    ----------
+    dem: xr.DataArray
+    flow_paths: xr.DataArray
+    wbt: WhiteboxTools
+    method: str
+        'HAND_steepest' as elevation above nearest stream wbt max flow_dir
+        'HAND_euclidean' as elevation above nearest stream based just on euclidean distance
+        'HAND_dinf' as elevation above nearest stream dinfinity flow dir
+        'HAND_multi' as elevation above nearest stream mfd flow dir
+        'HAND_cost' as cost accumulation accumulated change in elevation 
+    
+    Returns
+    -------
+    tuple(xr.DataArray, xr.DataArray) - hand and slope of hand
+    """
     method_list = ["hand_steepest", "hand_euclidean", "hand_dinf", "hand_multi", "hand_cost"]
     if method not in method_list:
         sys.exit(f"choose valid method from {method_list}")
@@ -169,7 +166,7 @@ def hand_pysheds(dem, flow_paths, routing_method):
     pysheds_dem = xarray_to_pysheds(dem)
     pysheds_flowpaths = xarray_to_pysheds(flow_paths)
     grid = Grid.from_raster(pysheds_dem)
-    mask = pysheds_flow_paths > 1
+    mask = pysheds_flowpaths > 1
 
     # let pysheds compute flowdir based on routing method
     if routing_method == 'dinf':
