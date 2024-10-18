@@ -40,7 +40,7 @@ def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
     gpd.GeoDataFrame
         A geodataframe with the following columns:
         - "geom": Point, a point along the xsection profile
-        - "pointID": numeric,  cross section id specific to the flowline
+        - "pointID": numeric, unique point ID
         - "streamID': numeric, from the index of flowlines
         - "xsID": numeric,  cross section id specific to the flowline
         - "alpha": numeric, represents the distance from the center point of the xsection
