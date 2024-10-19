@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import rioxarray as rxr
 import geopandas as gpd
 import numpy as np
+from shapelysmooth import chaikin_smooth
+from shapelysmooth import taubin_smooth
 
 from valleyfloor.process_topography import process_topography
 from valleyfloor.utils import setup_wbt
@@ -10,6 +12,7 @@ from slopes.subbasins import label_subbasins
 from slopes.hillslopes import label_hillslopes
 from slopes.network_xsections import network_xsections
 from slopes.utils import observe_values
+from slopes.preprocess_profile import preprocess_profiles
 
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
@@ -25,12 +28,29 @@ dataset['hillslope'] = label_hillslopes(dataset['flowpaths'], dataset['flow_dir'
 
 dataset = dataset.rename({'flowpaths': 'flow_path', 'smoothed_dem': 'dem'})
 
-xsections = network_xsections(aligned_flowlines, line_spacing=10,
-                              line_width=100, point_spacing=3,
+flowlines = []
+ids = []
+for streamID, linestring in aligned_flowlines.items():
+    linestring = linestring.simplify(3)
+    linestring = chaikin_smooth(taubin_smooth(linestring))
+    ids.append(streamID)
+    flowlines.append(linestring)
+flowlines = gpd.GeoSeries(flowlines, index=ids, crs=dem.rio.crs)
+flowlines.to_file("smoothed.shp")
+
+xsections = network_xsections(flowlines, line_spacing=5,
+                              line_width=100, point_spacing=2,
                               subbasins=dataset['subbasin'])
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand']])
+processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
 
-streamID = 6
-xsID = 4
-profile = profiles.loc[(profiles['streamID'] == streamID) & (profiles['xsID'] == xsID)]
+profiles.crs = dem.rio.crs
+processed.crs = dem.rio.crs
+
+processed.to_file("processed.shp")
+
+new_center = processed.loc[processed['alpha'] == 0]
+new_center.to_file('center.shp')
+
+
