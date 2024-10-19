@@ -1,6 +1,7 @@
 import geopandas as gpd
+import pandas as pd
 
-def preprocess_profiles(xsections: gpd.GeoDataFrame, min_hand_jump, ratio) -> gpd.GeoDataFrame:
+def preprocess_profiles(xsections: gpd.GeoDataFrame, min_hand_jump=15, ratio=2.5, min_distance=20) -> gpd.GeoDataFrame:
     """
     Applies preprocessing to each profile in a xsections dataframe.
     See
@@ -46,10 +47,19 @@ def preprocess_profiles(xsections: gpd.GeoDataFrame, min_hand_jump, ratio) -> gp
     for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
         profile = _remove_duplicates(profile)
         profile = _recenter_on_stream(profile)
+
+        if profile['alpha'].min() > -min_distance or profile['alpha'].max() < min_distance:
+            continue
+
         profile = _filter_ridge_crossing(profile, min_hand_jump, ratio)
+        profile = _ensure_no_gaps(profile)
+ 
 
         # confirm atleast 20 meters worth of points on either side
         # if not don't append
+        if profile['alpha'].min() > -min_distance or profile['alpha'].max() < min_distance:
+            continue
+
         processed_dfs.append(profile)
 
     processed_df = gpd.GeoDataFrame(pd.concat(processed_dfs, ignore_index=True))
@@ -96,7 +106,7 @@ def _recenter_on_stream(profile: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
 
     if fp_points.sum():
         if fp_points.sum() == 1:
-            calibration_alpha = sorted_points['alpha'].loc[fp_points].iloc[0].item()
+            calibration_alpha = profile['alpha'].loc[fp_points].iloc[0].item()
         else:
             points = profile.loc[fp_points]
             sorted_points = points.sort_values(by=['hand', 'alpha'], key=lambda col: col.abs() if col.name == 'alpha' else col )
@@ -128,8 +138,8 @@ def _filter_ridge_crossing(profile, min_hand_jump, ratio):
         return hand.index
 
     pos, neg = _split_profile(profile)
-    pos = pos.loc[_filter_ratio(pos['hand'], pos['dem'], ratio, min_jump)]
-    neg = neg.loc[_filter_ratio(neg['hand'], neg['dem'], ratio, min_jump)]
+    pos = pos.loc[_filter_ratio(pos['hand'], pos['dem'], ratio, min_hand_jump)]
+    neg = neg.loc[_filter_ratio(neg['hand'], neg['dem'], ratio, min_hand_jump)]
     return _combine_profile(pos, neg)
 
 def _split_profile(profile):
@@ -138,3 +148,27 @@ def _split_profile(profile):
     neg['alpha'] = neg['alpha'].abs()
     neg = neg.sort_values('alpha')
     return pos, neg
+
+def _combine_profile(pos, neg):
+    neg['alpha'] = neg['alpha'] * - 1
+    profile = pd.concat([pos, neg])
+    profile = profile.sort_values('alpha')
+    return profile
+
+
+def _ensure_no_gaps(profile):
+    def _filter_max_increment(series, max_increment):
+        diff = series.diff().fillna(0)
+        exceed = diff[diff > max_increment]
+        if not exceed.empty:
+            position = diff.index.get_loc(exceed.idxmin())
+            return series.iloc[:position]
+        return series
+
+    max_increment = profile['alpha'].diff().mode().iloc[0] * 3
+    pos, neg = _split_profile(profile)
+
+    pos = pos.loc[_filter_max_increment(pos['alpha'], max_increment).index]
+    neg = neg.loc[_filter_max_increment(neg['alpha'], max_increment).index]
+
+    return _combine_profile(pos, neg)
