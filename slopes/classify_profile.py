@@ -26,7 +26,7 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.
         if slopes.loc[center_label] > slope_threshold:
             continue
         else:
-            floor_labels.append(center_label)
+            profile.loc[profile['label'] == center_label, 'floor'] = True
             # up
             for label in range(center_label, profile['label'].max()+1):
                 # add to floors
@@ -35,7 +35,7 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.
                 else:
                 # break, wall point is the point with that label and smalles abs(alpha)
                     label_alphas = profile.loc[profile['label'] == label, 'alpha']
-                    wall_point_1_loc = label_alphas.index[label_alphas.abs.min()]
+                    wall_point_1_loc = label_alphas.index[np.argmin(label_alphas.abs())]
                     profile.loc[wall_point_1_loc, 'wallpoint'] = True
                     break
 
@@ -46,7 +46,7 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.
                 else:
                 # break, wall point is the point with that label and smalles abs(alpha)
                     label_alphas = profile.loc[profile['label'] == label, 'alpha']
-                    wall_point_2_loc = label_alphas.index[label_alphas.abs.min()]
+                    wall_point_2_loc = label_alphas.index[np.argmin(label_alphas.abs())]
                     profile.loc[wall_point_2_loc, 'wallpoint'] = True
                     break
 

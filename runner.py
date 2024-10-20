@@ -61,6 +61,15 @@ segments = segment_profiles(processed)
 
 # classify points
 classified = classify_profiles(segments)
+wps = classified.loc[classified['wallpoint']]
+floor = classified.loc[classified['floor']]
+floor.to_file('floor.shp')
+
+# hand thresholds  
+buffer = 2
+thresholds = wps.groupby("streamID")['hand'].quantile(.80) # reachID
+thresholds = thresholds + buffer
+
 
 
 
