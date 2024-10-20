@@ -10,12 +10,36 @@ Then we apply a heuristic to classify these regions (find the breakpoint that is
 in this step we may want to do some preprocessing, e.g. if elevation decreases stop the series
 
 """
+import pandas as pd
+import geopandas as gpd
 import numpy as np
 import ruptures as rpt
 from scipy import signal
 from rdp import rdp
 
 import matplotlib.pyplot as plt
+
+def segment_profiles(xsections: gpd.GeoDataFrame) -> gpd.GeoDataFrame: 
+    """
+    adds breakpoint column and label column
+    """
+    req = ["streamID", "xsID", "alpha", "slope", "dem", "curvature"]
+    for col in req:
+        if col not in xsections.columns:
+            raise ValueError(f"Missing column: {col}, which is required")
+
+
+    # preprocess each profile in the dataframe
+    processed_dfs = []
+    for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
+        labels, bps = profile_curvature_peaks(-profile['curvature'])
+        profile['label'] = labels
+        profile['bp'] = False
+        profile.loc[profile.index[bps], 'bp'] = True
+        processed_dfs.append(profile)
+
+    processed_df = gpd.GeoDataFrame(pd.concat(processed_dfs, ignore_index=True))
+    return processed_df
 
 def mean_shift(series, model='l2', pen=5):
     method = rpt.Pelt(model=model).fit(series)

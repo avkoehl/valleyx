@@ -13,6 +13,8 @@ from slopes.hillslopes import label_hillslopes
 from slopes.network_xsections import network_xsections
 from slopes.utils import observe_values
 from slopes.preprocess_profile import preprocess_profiles
+from slopes.segment_profile import segment_profiles
+from slopes.classify_profile import classify_profiles
 
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
@@ -42,7 +44,7 @@ xsections = network_xsections(flowlines, line_spacing=5,
                               line_width=100, point_spacing=2,
                               subbasins=dataset['subbasin'])
 
-profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand']])
+profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
 
 profiles.crs = dem.rio.crs
@@ -52,5 +54,13 @@ processed.to_file("processed.shp")
 
 new_center = processed.loc[processed['alpha'] == 0]
 new_center.to_file('center.shp')
+
+
+# segment profiles
+segments = segment_profiles(processed)
+
+# classify points
+classified = classify_profiles(segments)
+
 
 
