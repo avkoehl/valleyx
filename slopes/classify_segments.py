@@ -1,40 +1,58 @@
-"""
-input: bps, labels
+import pandas as pd
+import geopandas as gpd
+import numpy as np
 
-slope series (detrended)?
-detrended elevation series
+import matplotlib.pyplot as plt
+
+def classify_segments(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.GeoDataFrame: 
+    """
+    add two columns: wall_point, floor
+    """
+    req = ["streamID", "xsID", "alpha", "slope", "label", "bp"]
+    for col in req:
+        if col not in xsections.columns:
+            raise ValueError(f"Missing column: {col}, which is required")
 
 
-cases:
-    channel is valley
-    wall point only on one side
-    wall points both sides
-    no wall points
+    # preprocess each profile in the dataframe
+    processed_dfs = []
+    for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
+        
+        profile['floor'] = False
+        profile['wallpoint'] = False
 
-slope threshold = 10
-max_height_feature (terrace, island, bar, fan, tallus, morraine)... 10
+        slopes = profile.groupby("label")['slope'].median()
+        center_label = profile.loc[profile['alpha'] == 0, 'label'].item()
+
+        if slopes.loc[center_label] > slope_threshold:
+            continue
+        else:
+            floor_labels.append(center_label)
+            # up
+            for label in range(center_label, profile['label'].max()+1):
+                # add to floors
+                if slopes.loc[label] <= slope_threshold:
+                    profile.loc[profile['label'] == label, 'floor'] = True
+                else:
+                # break, wall point is the point with that label and smalles abs(alpha)
+                    label_alphas = = profile.loc[profile['label'] == label, 'alpha']
+                    wall_point_1_loc = label_alphas.index[label_alphas.abs.min()]
+                    profile.loc[wall_point_1_loc, 'wallpoint'] = True
+                    break
+
+            # down
+            for label in range(center_label, -1, -1):
+                if slopes.loc[label] <= slope_threshold:
+                    profile.loc[profile['label'] == label, 'floor'] = True
+                else:
+                # break, wall point is the point with that label and smalles abs(alpha)
+                    label_alphas = = profile.loc[profile['label'] == label, 'alpha']
+                    wall_point_2_loc = label_alphas.index[label_alphas.abs.min()]
+                    profile.loc[wall_point_2_loc, 'wallpoint'] = True
+                    break
 
 
-wall point:
-    start of a segment with slope exceeding threshold not leading to a valley floor feature
+        processed_dfs.append(profile)
 
-slope unit patterns:
-
-slope up means when on the axis perpendicular to the channel start to end increases in elevation relative to stream
-
-    1. flat, slope_up, flat, slope_up -- terrace/fan/tallus
-    2. flat, slope_up, flat, slope_down, flat/slope -- island/morraine/ -- how to distinguish from another valley?
-    2. flat, slope_up, slope_down, flat/slope -- island/morraine/ -- how to distinguish from another valley?
-
-    slope_up, slope_up -- no floor
-   NO TERRACE,  slope_up, flat, slope_up, NO TERRACE -- floor
-"""
-
-def slope_units(slope, labels, bps):
-    return
-
-def group_slope_units():
-    return
-
-def classify_slope_units(slope, detrended_elev, bps):
-    return
+    processed_df = gpd.GeoDataFrame(pd.concat(processed_dfs, ignore_index=True))
+    return processed_df
