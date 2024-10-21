@@ -23,7 +23,14 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.
         slopes = profile.groupby("label")['slope'].median()
         center_label = profile.loc[profile['alpha'] == 0, 'label'].item()
 
+        # 1. slope threshold of the hillslope
+        # 2. slope threshold delta between channel and hillslope (5)
+        # 3. slope threshold from a point
+        #JUMP RELEATIVE TO THE SLOPE OF THE SLOPE UNIT OF THE CHANNEL +5
+        # IF CENTER POINT IS BOTH WALL POINTS -> add the immediate left and right as the wall points
+
         if slopes.loc[center_label] > slope_threshold:
+            # wall points are the point immediately before and after the channel point on the profile
             continue
         else:
             profile.loc[profile['label'] == center_label, 'floor'] = True
