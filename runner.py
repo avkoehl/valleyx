@@ -50,22 +50,14 @@ processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_dista
 profiles.crs = dem.rio.crs
 processed.crs = dem.rio.crs
 
-processed.to_file("processed.shp")
-
-new_center = processed.loc[processed['alpha'] == 0]
-new_center.to_file('center.shp')
-
-
 # segment profiles
 segments = segment_profiles(processed)
-
-# classify points
 classified = classify_profiles(segments)
-wps = classified.loc[classified['wallpoint']]
-floor = classified.loc[classified['floor']]
-floor.to_file('floor.shp')
+classified_delta = classify_profiles(segments, method="delta_slope_threshold")
+
 
 # hand thresholds  
+wps = classified.loc[classified['wallpoint']]
 buffer = 2
 thresholds = wps.groupby("streamID")['hand'].quantile(.80) # reachID
 thresholds = thresholds + buffer
