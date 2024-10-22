@@ -10,6 +10,30 @@ import rioxarray as rxr
 import xarray as xr
 from shapely.geometry import Point
 
+def point_to_pixel(raster: xr.DataArray, point: Point) ->  (int,int):
+    """
+    Converts shapely point to the row and col index of that point according
+    to the affine transformation of the input raster
+
+    Parameters
+    ----------
+    raster: xr.DataArray
+        raster from which we will use the Affine transform
+    point: shapely.geometry.Point
+        shapely point we want the coordinate for
+
+    Returns
+    -------
+    tuple: 
+        (row, col)
+    """
+    transform = raster.rio.transform()
+    inverse = ~transform
+    lon = point.x
+    lat = point.y
+    row, col = inverse_transform * (lon, lat)
+    return int(row), int(col)
+
 def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:
     """
     Converts the row and column of a raster array to a geographic Point.
@@ -28,7 +52,7 @@ def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:
     Point
         A Shapely Point representing the geographic coordinates (longitude, latitude).
     """
-    transform: Affine = raster.rio.transform()
+    transform = raster.rio.transform()
     lon, lat = transform * (col, row)  # (x, y) corresponds to (col, row)
     return Point(lon, lat)
 
