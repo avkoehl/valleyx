@@ -70,15 +70,3 @@ def classify_profile_slope_threshold(profile, slope_threshold):
                 break
         return profile
     return profile
-
-def classify_profile_max_ascent(profile, num_cells, slope_threshold, max_ascent_flowdir, dirmap):
-    """ for each bp, see if it exceeds num_cells at or above slope_threshold along max ascent path """
-    for bp in profile.loc[profile['bp'], 'geom']:
-        print(bp)
-        # get row,col in max_ascent_flowdir
-        # trace flowpath up to-- num_cells
-        # if less than num_cells, continue
-        # if np.any(path['slope'] < slope_threshold) continue
-    pass
-
-# construct flowdir max ascent version

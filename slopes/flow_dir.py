@@ -37,10 +37,16 @@ DIRMAPS = {
         }
 
 @numba.njit
-def _trace_flowpath_numba(current_row, current_col, flow_dir_values, dirmap):
+def _trace_flowpath_numba(current_row, current_col, flow_dir_values, dirmap, num_cells):
     nrows, ncols = flow_dir_values.shape
     path = [(current_row, current_col)]
+    count = 0
     while True:
+
+        if num_cells > 0:
+            if count >= num_cells:
+                break
+
         current_direction = flow_dir_values[current_row, current_col]
         if current_direction == 0:
             break
@@ -54,9 +60,10 @@ def _trace_flowpath_numba(current_row, current_col, flow_dir_values, dirmap):
 
         current_row, current_col = next_row, next_col
         path.append((next_row, next_col))
+        count = count + 1
     return path
 
-def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> gpd.GeoSeries:
+def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict, num_cells: int) -> gpd.GeoSeries:
     """
     Traces the flowpath from a given cell.
 
@@ -70,6 +77,8 @@ def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> 
         A raster representing the flowdirections
     dirmap: dict
         Direction mappings
+    num_cells: int
+        if -1 then get full path, else stop path after traversing num_cells
 
     Returns
     -------
@@ -82,7 +91,7 @@ def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict) -> 
     for k,v in dirmap.items():
         d[np.float32(k)] = np.int64(v)
 
-    path = _trace_flowpath_numba(np.int64(row), np.int64(col), flow_dir.values, d)
+    path = _trace_flowpath_numba(np.int64(row), np.int64(col), flow_dir.values, d, num_cells)
 
     result = [pixel_to_point(flow_dir, row,col) for row,col in path]
     result = gpd.GeoSeries(result, crs=flow_dir.rio.crs)
