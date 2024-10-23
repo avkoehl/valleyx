@@ -2,12 +2,14 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 
+from slopes.preprocess_profile import _split_profile
 
-def classify_profiles(xsections: gpd.GeoDataFrame, method = 'slope_threshold', slope_threshold=12.5) -> gpd.GeoDataFrame: 
+
+def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.GeoDataFrame: 
     """
     add two columns: wall_point, floor
     """
-    req = ["streamID", "xsID", "alpha", "slope", "label", "bp"]
+    req = ["streamID", "xsID", "alpha", "slope", "bp"]
     for col in req:
         if col not in xsections.columns:
             raise ValueError(f"Missing column: {col}, which is required")
@@ -15,58 +17,42 @@ def classify_profiles(xsections: gpd.GeoDataFrame, method = 'slope_threshold', s
     # classify floor points and wall points on each profile
     processed_dfs = []
     for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
-
-        if method == "slope_threshold":
-            classified = classify_profile_slope_threshold(profile, slope_threshold)
-        elif method == "delta_slope_threshold":
-            baseline_slope = profile.loc[profile['alpha'] == 0, 'slope'].item()
-            classified = classify_profile_slope_threshold(profile, baseline_slope)
-        elif method == "max_ascent":
-            raise ValueError("max ascent not implemented yet")
-        else:
-            raise ValueError("method doesn't exist")
-
+        classified = classify_profile_slope_threshold(profile, slope_threshold)
         processed_dfs.append(classified)
 
     processed_df = gpd.GeoDataFrame(pd.concat(processed_dfs, ignore_index=True))
     return processed_df
 
 def classify_profile_slope_threshold(profile, slope_threshold):
-    profile['floor'] = False
     profile['wallpoint'] = False
 
-    slopes = profile.groupby("label")['slope'].median()
-    center_label = profile.loc[profile['alpha'] == 0, 'label'].item()
+    pos, neg = _split_profile(profile, duplicate_center=True)
+    pos_wall_loc = _find_wall_half(pos, slope_threshold)
+    neg_wall_loc = _find_wall_half(neg, slope_threshold)
 
-    if slopes.loc[center_label] > slope_threshold:
-        center_iloc = np.argmax([profile['alpha'] == 0])
-        profile.loc[profile['alpha'] == 0, "floor"] = True
-        neighbor_indexes = [profile.index[center_iloc - 1], profile.index[center_iloc + 1]]
-        profile.loc[neighbor_indexes, "wallpoint"] = True
-        return profile
-    else:
-        profile.loc[profile['label'] == center_label, 'floor'] = True
-        # up
-        for label in range(center_label, profile['label'].max()+1):
-            # add to floors
-            if slopes.loc[label] <= slope_threshold:
-                profile.loc[profile['label'] == label, 'floor'] = True
-            else:
-            # break, wall point is the point with that label and smalles abs(alpha)
-                label_alphas = profile.loc[profile['label'] == label, 'alpha']
-                wall_point_1_loc = label_alphas.index[np.argmin(label_alphas.abs())]
-                profile.loc[wall_point_1_loc, 'wallpoint'] = True
-                break
-
-        # down
-        for label in range(center_label, -1, -1):
-            if slopes.loc[label] <= slope_threshold:
-                profile.loc[profile['label'] == label, 'floor'] = True
-            else:
-            # break, wall point is the point with that label and smalles abs(alpha)
-                label_alphas = profile.loc[profile['label'] == label, 'alpha']
-                wall_point_2_loc = label_alphas.index[np.argmin(label_alphas.abs())]
-                profile.loc[wall_point_2_loc, 'wallpoint'] = True
-                break
-        return profile
+    if pos_wall_loc is not None:
+        profile.loc[pos_wall_loc, "wallpoint"] = True
+    if neg_wall_loc is not None:
+        profile.loc[neg_wall_loc, "wallpoint"] = True
     return profile
+
+def _find_wall_half(half_profile, slope_threshold):
+    """
+    returns wall point loc if any
+    """
+    # add first and last point as bps
+    half_profile.loc[half_profile.index[0], 'bp'] = True # this is the stream
+    half_profile.loc[half_profile.index[-1], 'bp'] = True
+
+    positional_indices = np.where(half_profile['bp'])[0]
+
+    for i,position in enumerate(positional_indices):
+        if i == (len(positional_indices) - 1): # final index
+            break
+        
+        next_pos = positional_indices[i+1]
+        median_slope = half_profile['slope'].iloc[position: next_pos+1].median()
+
+        if median_slope > slope_threshold:
+            return half_profile.index[position]
+    return None
