@@ -142,9 +142,13 @@ def _filter_ridge_crossing(profile, min_hand_jump, ratio):
     neg = neg.loc[_filter_ratio(neg['hand'], neg['dem'], ratio, min_hand_jump)]
     return _combine_profile(pos, neg)
 
-def _split_profile(profile):
+def _split_profile(profile, duplicate_center=False):
     pos = profile.loc[profile['alpha'] >= 0]
-    neg = profile.loc[profile['alpha'] < 0].copy()
+
+    if duplicate_center:
+        neg = profile.loc[profile['alpha'] <= 0].copy()
+    else:
+        neg = profile.loc[profile['alpha'] < 0].copy()
     neg['alpha'] = neg['alpha'].abs()
     neg = neg.sort_values('alpha')
     return pos, neg
