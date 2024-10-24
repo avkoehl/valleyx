@@ -3632,6 +3632,27 @@ files = [
 ]
 
 [[package]]
+name = "tqdm"
+version = "4.66.5"
+description = "Fast, Extensible Progress Meter"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "tqdm-4.66.5-py3-none-any.whl", hash = "sha256:90279a3770753eafc9194a0364852159802111925aa30eb3f9d85b0e805ac7cd"},
+    {file = "tqdm-4.66.5.tar.gz", hash = "sha256:e1020aef2e5096702d8a025ac7d16b1577279c9d63f8375b63083e9a5f0fcbad"},
+]
+
+[package.dependencies]
+colorama = {version = "*", markers = "platform_system == \"Windows\""}
+
+[package.extras]
+dev = ["pytest (>=6)", "pytest-cov", "pytest-timeout", "pytest-xdist"]
+notebook = ["ipywidgets (>=6)"]
+slack = ["slack-sdk"]
+telegram = ["requests"]
+
+[[package]]
 name = "traitlets"
 version = "5.14.3"
 description = "Traitlets Python configuration system"
@@ -3745,8 +3766,8 @@ whitebox = "^2.3.5"
 
 [package.source]
 type = "git"
-url = 'ssh://git@github.com/avkoehl/valleyfloor.git'
-reference = 'main'
+url = "ssh://git@github.com/avkoehl/valleyfloor.git"
+reference = "main"
 resolved_reference = "353a85564d121c08b52dfffd4ff0de674e96ef70"
 
 [[package]]
@@ -3864,4 +3885,4 @@ viz = ["matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "e353b71924df11e5095873ea316706d50afe1080db9f315522ad06f64a86a1fc"
+content-hash = "9b0b9a743253a8f285218528ccccbe1cc2f0b30f07074160034119b61c7d87c8"

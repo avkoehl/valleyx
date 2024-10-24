@@ -31,7 +31,7 @@ def point_to_pixel(raster: xr.DataArray, point: Point) ->  (int,int):
     inverse = ~transform
     lon = point.x
     lat = point.y
-    row, col = inverse_transform * (lon, lat)
+    col, row = inverse * (lon, lat)
     return int(row), int(col)
 
 def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:

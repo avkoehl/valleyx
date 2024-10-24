@@ -63,7 +63,8 @@ def _trace_flowpath_numba(current_row, current_col, flow_dir_values, dirmap, num
         count = count + 1
     return path
 
-def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict, num_cells: int) -> gpd.GeoSeries:
+def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict, num_cells: int, 
+                   ) -> gpd.GeoSeries:
     """
     Traces the flowpath from a given cell.
 
@@ -82,8 +83,10 @@ def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict, num
 
     Returns
     -------
-    gpd.GeoSeries
-        Series of point geometries representing the path
+    (gpd.GeoSeries, list)
+        - Series of point geometries representing the path
+        - list of cell (row, col)
+
     """
     current_row, current_col = row, col
 
@@ -95,7 +98,7 @@ def trace_flowpath(row: int, col: int, flow_dir: xr.DataArray, dirmap: dict, num
 
     result = [pixel_to_point(flow_dir, row,col) for row,col in path]
     result = gpd.GeoSeries(result, crs=flow_dir.rio.crs)
-    return result
+    return result, path
 
 def flowdir_wbt(dem: xr.DataArray, wbt: WhiteboxTools):
     """

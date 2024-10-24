@@ -24,6 +24,7 @@ scikit-learn = "^1.5.2"
 rdp = "^0.8"
 seaborn = "^0.13.2"
 pysheds = "^0.4"
+tqdm = "^4.66.5"
 
 [build-system]
 requires = ["poetry-core"]

@@ -15,6 +15,7 @@ from slopes.utils import observe_values
 from slopes.preprocess_profile import preprocess_profiles
 from slopes.segment_profile import segment_profiles
 from slopes.classify_profile import classify_profiles
+from slopes.classify_profile_max_ascent import classify_profiles_max_ascent
 
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
@@ -44,6 +45,10 @@ xsections = network_xsections(flowlines, line_spacing=5,
                               line_width=100, point_spacing=2,
                               subbasins=dataset['subbasin'])
 
+xsections2 = network_xsections(aligned_flowlines, line_spacing=5,
+                              line_width=100, point_spacing=2,
+                              subbasins=dataset['subbasin'])
+
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
 
@@ -53,7 +58,14 @@ processed.crs = dem.rio.crs
 # segment profiles
 segments = segment_profiles(processed)
 classified = classify_profiles(segments)
-classified_delta = classify_profiles(segments, method="delta_slope_threshold")
+
+
+segments_two = segments.copy()
+segments_two['bp'] = segments['curvature'] < -0.01
+classified_two = classify_profiles_max_ascent(segments_two, dem, dataset['slope'], 8, 14, wbt)
+
+wps_b = classified_two.loc[classified_two['wallpoint']]
+wps_b.to_file('test2.shp')
 
 
 # hand thresholds  
