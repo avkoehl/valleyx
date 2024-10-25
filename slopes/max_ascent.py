@@ -57,20 +57,21 @@ def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: in
     stream_points = sample_points_around_flowpaths(flow_paths, num_points)
 
     wall_points = []
-    for point in stream_points:
-        path = 
-        slopes = 
-        # find first point in slopes where the next 5 values exceed slope threshold
-        # condition = arr > Y
-        # sliding_sum = np.convolve(condition, np.ones(X, dtype=int), mode='valid')
-        # match_idx = np.where(sliding_sum == X)[0]
-        # if match_idx.size > 0:
-        #    wall_points.appedn(path[match_idx[0]])
-        # else:
-        #     continue
+    for row in tqdm(stream_points.itertuples(index=False)):
+        points, cells = trace_flowpath(row.row, row.col, flow_dir, dirmap=DIRMAPS['wbt'], num_cells=20)
+        slopes = np.array([slope[row, col].item() for row,col in cells])
+
+        condition = slopes > slope_threshold
+        sliding_sum = np.convolve(condition, np.ones(num_cells, dtype=int), mode='valid')
+        match_idx = np.where(sliding_sum == num_cells)[0]
+        if match_idx.size > 0:
+            wall_points.append(
+                    {'geom': points[match_idx[0]],
+                     'row': cells[match_idx[0]][0],
+                     'col': cells[match_idx[0]][1]})
 
     results = gpd.GeoDataFrame.from_records(wall_points)
-    results = results.set_geometry('geometry')
+    results = results.set_geometry('geom')
     results.crs = dem.rio.crs
     results['pointID'] = np.arange(len(results))
     return results

@@ -60,9 +60,14 @@ segments = segment_profiles(processed)
 classified = classify_profiles(segments)
 
 
-segments_two = segments.copy()
-segments_two['bp'] = segments['curvature'] < -0.01
+segments_two = processed.copy()
+segments_two['bp'] = processed['curvature'] < -0.01
 classified_two = classify_profiles_max_ascent(segments_two, dem, dataset['slope'], 8, 14, wbt)
+classified_three = classify_profiles_max_ascent(segments_two, dem, dataset['slope'], 15, 12, wbt)
+classified_four = classify_profiles_max_ascent(segments_two, dem, dataset['slope'], 20, 10, wbt)
+classified_two.to_file("8cell_14deg.shp")
+classified_three.to_file("15cell_12deg.shp")
+classified_four.to_file("20cell_10deg.shp")
 
 wps_b = classified_two.loc[classified_two['wallpoint']]
 wps_b.to_file('test2.shp')
