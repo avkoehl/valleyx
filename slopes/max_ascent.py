@@ -23,6 +23,10 @@ def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: in
     """
     Trace paths following the maximum local gradient from the streams.
 
+    break if certain condition is met:
+    num_cells:
+    slope_threshold: 
+
     Parameters
     ----------
     flow_paths: xr.DataArray
@@ -52,15 +56,20 @@ def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: in
     #stream_points = sample_points_on_flowpaths(flow_paths, num_points)
     stream_points = sample_points_around_flowpaths(flow_paths, num_points)
 
-    results = [] 
-    for row in stream_points.itertuples(index=False):
-        path = trace_flowpath(row.row, row.col, fdir, dirmap=DIRMAPS['wbt'])
-        for i,point in enumerate(path):
-            result = {'geometry': point,
-                      'streamID': row.streamID,
-                      'pathID': i}
-            results.append(result)
-    results = gpd.GeoDataFrame.from_records(results)
+    wall_points = []
+    for point in stream_points:
+        path = 
+        slopes = 
+        # find first point in slopes where the next 5 values exceed slope threshold
+        # condition = arr > Y
+        # sliding_sum = np.convolve(condition, np.ones(X, dtype=int), mode='valid')
+        # match_idx = np.where(sliding_sum == X)[0]
+        # if match_idx.size > 0:
+        #    wall_points.appedn(path[match_idx[0]])
+        # else:
+        #     continue
+
+    results = gpd.GeoDataFrame.from_records(wall_points)
     results = results.set_geometry('geometry')
     results.crs = dem.rio.crs
     results['pointID'] = np.arange(len(results))
