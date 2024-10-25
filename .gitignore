@@ -26,6 +26,15 @@ __pycache__/
 .ipynb_checkpoints
 .virtual_documents
 
+# data
+*.shp
+*.shx
+*.cpg
+*.dbf
+*.prj
+*.sbn
+*.sbx
+
 
 # Operating System Metadata
 ._*
