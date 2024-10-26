@@ -10,14 +10,29 @@ from slopes.preprocess_profile import _split_profile
 from slopes.utils import point_to_pixel
 from slopes.utils import pixel_to_point
 
-from tqdm import tqdm
-
-
-def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope, num_cells, slope_threshold, wbt):
+def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope, 
+                                 num_cells, slope_threshold, wbt):
     """
-    add two columns: wall_point, floor
+    Find the wall points for a stream network's cross sections. 
+    Using condition on max ascent path of that point
+
+    Parameters
+    ----------
+    xsections: gpd.GeoDataFrame
+        cross sections of the stream network with values for slope, curvature
+    dem: xr.DataArray
+        elevation raster
+    slope: xr.DataArray
+        slope raster
+    num_cells: path length
+    slope_threshold: min slope
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        matches input dataframe with an additional boolean column: 'wallpoint' 
     """
-    req = ["streamID", "xsID", "alpha", "slope", "bp"]
+    req = ["streamID", "xsID", "alpha", "slope", "curvature"]
     for col in req:
         if col not in xsections.columns:
             raise ValueError(f"Missing column: {col}, which is required")
@@ -29,7 +44,8 @@ def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope, num_ce
     # classify floor points and wall points on each profile
     processed_dfs = []
     for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
-        profile['wallpoint'] = False
+        classified = profile.copy()
+        classified['bp'] = classified['curvature'] < 0
         classified = classify_profile_max_ascent(profile, fdir, dirmap, slope,
                                                  num_cells, slope_threshold)
         processed_dfs.append(classified)
@@ -41,6 +57,7 @@ def classify_profile_max_ascent(profile, fdir, dirmap, slope, num_cells, slope_t
     """ for each bp, see if it exceeds num_cells at or above slope_threshold along max ascent path """
 
     # split profile
+    profile['wallpoint'] = False
     pos, neg = _split_profile(profile, duplicate_center=True)
 
     pos_wall_loc = _find_wall_half_max_ascent(pos, fdir, dirmap, slope, num_cells, slope_threshold)

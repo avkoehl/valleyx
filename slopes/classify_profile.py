@@ -1,15 +1,31 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
+from scipy import signal
 
 from slopes.preprocess_profile import _split_profile
 
+def classify_profiles(xsections: gpd.GeoDataFrame, 
+                      slope_threshold: int) -> gpd.GeoDataFrame: 
+    """
+    Find the wall points for a stream network's cross sections.
+    Using a slope threshold
 
-def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.GeoDataFrame: 
+    Parameters
+    ----------
+    xsections: gpd.GeoDataFrame
+        cross sections of the stream network with values for slope, curvature
+    slope_threshold: int
+        maximum slope of a region in the cross section before it gets
+        classified as valley wall
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        matches input dataframe with an additional boolean column: 'wallpoint' 
+        
     """
-    add two columns: wall_point, floor
-    """
-    req = ["streamID", "xsID", "alpha", "slope", "bp"]
+    req = ["streamID", "xsID", "alpha", "slope", "curvature"]
     for col in req:
         if col not in xsections.columns:
             raise ValueError(f"Missing column: {col}, which is required")
@@ -17,6 +33,11 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.
     # classify floor points and wall points on each profile
     processed_dfs = []
     for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
+        classified = profile.copy()
+        clasiffied['bp'] = False
+        peaks = signal.find_peaks(-classified['curvature'])[0]
+        profile.loc[profile.index[peaks], 'bp'] = True
+
         classified = classify_profile_slope_threshold(profile, slope_threshold)
         processed_dfs.append(classified)
 
@@ -24,6 +45,9 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold=12.5) -> gpd.
     return processed_df
 
 def classify_profile_slope_threshold(profile, slope_threshold):
+    """
+    Splits the cross section profile and finds the wallpoint for each side 
+    """
     profile['wallpoint'] = False
 
     pos, neg = _split_profile(profile, duplicate_center=True)
