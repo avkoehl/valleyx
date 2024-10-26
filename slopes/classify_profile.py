@@ -34,7 +34,7 @@ def classify_profiles(xsections: gpd.GeoDataFrame,
     processed_dfs = []
     for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
         classified = profile.copy()
-        clasiffied['bp'] = False
+        classified['bp'] = False
         peaks = signal.find_peaks(-classified['curvature'])[0]
         profile.loc[profile.index[peaks], 'bp'] = True
 

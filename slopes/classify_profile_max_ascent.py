@@ -1,6 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
+from tqdm import tqdm
 
 from slopes.flow_dir import flowdir_wbt
 from slopes.flow_dir import trace_flowpath
@@ -46,7 +47,7 @@ def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope,
     for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
         classified = profile.copy()
         classified['bp'] = classified['curvature'] < 0
-        classified = classify_profile_max_ascent(profile, fdir, dirmap, slope,
+        classified = classify_profile_max_ascent(classified, fdir, dirmap, slope,
                                                  num_cells, slope_threshold)
         processed_dfs.append(classified)
 
