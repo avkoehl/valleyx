@@ -6,7 +6,7 @@ from slopes.flow_dir import flowdir_wbt
 from slopes.flow_dir import trace_flowpath
 from slopes.flow_dir import DIRMAPS
 from slopes.max_ascent import invert_dem
-from slopes.preprocess_profile import _split_profile
+from slopes.utils import split_profile
 from slopes.utils import point_to_pixel
 from slopes.utils import pixel_to_point
 
@@ -58,7 +58,7 @@ def classify_profile_max_ascent(profile, fdir, dirmap, slope, num_cells, slope_t
 
     # split profile
     profile['wallpoint'] = False
-    pos, neg = _split_profile(profile, duplicate_center=True)
+    pos, neg = split_profile(profile, duplicate_center=True)
 
     pos_wall_loc = _find_wall_half_max_ascent(pos, fdir, dirmap, slope, num_cells, slope_threshold)
     neg_wall_loc = _find_wall_half_max_ascent(neg, fdir, dirmap, slope, num_cells, slope_threshold)

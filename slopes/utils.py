@@ -10,6 +10,17 @@ import rioxarray as rxr
 import xarray as xr
 from shapely.geometry import Point
 
+def split_profile(profile, duplicate_center=False):
+    pos = profile.loc[profile['alpha'] >= 0]
+
+    if duplicate_center:
+        neg = profile.loc[profile['alpha'] <= 0].copy()
+    else:
+        neg = profile.loc[profile['alpha'] < 0].copy()
+    neg['alpha'] = neg['alpha'].abs()
+    neg = neg.sort_values('alpha')
+    return pos, neg
+
 def point_to_pixel(raster: xr.DataArray, point: Point) ->  (int,int):
     """
     Converts shapely point to the row and col index of that point according

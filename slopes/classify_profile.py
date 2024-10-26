@@ -3,7 +3,7 @@ import geopandas as gpd
 import numpy as np
 from scipy import signal
 
-from slopes.preprocess_profile import _split_profile
+from slopes.utils import split_profile
 
 def classify_profiles(xsections: gpd.GeoDataFrame, 
                       slope_threshold: int) -> gpd.GeoDataFrame: 
@@ -50,7 +50,7 @@ def classify_profile_slope_threshold(profile, slope_threshold):
     """
     profile['wallpoint'] = False
 
-    pos, neg = _split_profile(profile, duplicate_center=True)
+    pos, neg = split_profile(profile, duplicate_center=True)
     pos_wall_loc = _find_wall_half(pos, slope_threshold)
     neg_wall_loc = _find_wall_half(neg, slope_threshold)
 

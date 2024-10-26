@@ -1,6 +1,8 @@
 import geopandas as gpd
 import pandas as pd
 
+from slopes.utils import split_profile
+
 def preprocess_profiles(xsections: gpd.GeoDataFrame, min_hand_jump=15, ratio=2.5, min_distance=20) -> gpd.GeoDataFrame:
     """
     Applies preprocessing to each profile in a xsections dataframe.
@@ -137,21 +139,10 @@ def _filter_ridge_crossing(profile, min_hand_jump, ratio):
             return hand.index[:position]
         return hand.index
 
-    pos, neg = _split_profile(profile)
+    pos, neg = split_profile(profile)
     pos = pos.loc[_filter_ratio(pos['hand'], pos['dem'], ratio, min_hand_jump)]
     neg = neg.loc[_filter_ratio(neg['hand'], neg['dem'], ratio, min_hand_jump)]
     return _combine_profile(pos, neg)
-
-def _split_profile(profile, duplicate_center=False):
-    pos = profile.loc[profile['alpha'] >= 0]
-
-    if duplicate_center:
-        neg = profile.loc[profile['alpha'] <= 0].copy()
-    else:
-        neg = profile.loc[profile['alpha'] < 0].copy()
-    neg['alpha'] = neg['alpha'].abs()
-    neg = neg.sort_values('alpha')
-    return pos, neg
 
 def _combine_profile(pos, neg):
     neg['alpha'] = neg['alpha'] * - 1
@@ -170,7 +161,7 @@ def _ensure_no_gaps(profile):
         return series
 
     max_increment = profile['alpha'].diff().mode().iloc[0] * 3
-    pos, neg = _split_profile(profile)
+    pos, neg = split_profile(profile)
 
     pos = pos.loc[_filter_max_increment(pos['alpha'], max_increment).index]
     neg = neg.loc[_filter_max_increment(neg['alpha'], max_increment).index]
