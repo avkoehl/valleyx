@@ -1,10 +1,3 @@
-"""
-    TODO: 
-       consider improvements to sampling:
-          - sample at set distances down the flowpath (convert to linestring)
-          - sample a point on either side of the flowpath at the set point so not biasing steeper hillslope
-
-"""
 import random
 
 import numpy as np
