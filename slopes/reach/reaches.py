@@ -30,9 +30,9 @@ def delineate_reaches(dataset, flowlines, wbt, num_points, spacing):
                              dataset['flow_acc'], dataset['flow_dir'], 
                              wbt, num_points, spacing)
 
-    dataset['flowpaths_reaches'] = result['flowpaths_reaches']
-    dataset['subbasins'] = result['subbasins']
-    dataset['hillslopes'] = result['hillslopes']
+    dataset['flow_path'] = result['flowpaths_reaches']
+    dataset['subbasin'] = result['subbasins']
+    dataset['hillslope'] = result['hillslopes']
     return dataset, result['flowlines_reaches']
 
 def reach_subbasins(valley_floors, flowpaths, flowlines, flow_acc, flow_dir, wbt, num_points, spacing):

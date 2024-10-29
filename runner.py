@@ -18,6 +18,7 @@ from slopes.profile.classify_profile import classify_profiles
 from slopes.geometry.centerline import polygon_centerline
 from slopes.geometry.width import polygon_widths
 from slopes.reach.reaches import delineate_reaches
+from slopes.floor.floor import label_floors
 
 logger.enable('slopes')
 
@@ -37,15 +38,19 @@ dataset = dataset.rename({'flowpaths': 'flow_path', 'smoothed_dem': 'dem'})
 
 dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
 
-smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
-smoothed = flowlines_reaches.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
+#smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
+#smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 
-xsections = network_xsections(smoothed, line_spacing=30,
-                              line_width=100, point_spacing=10,
-                              subbasins=dataset['subbasins'])
+smoothed = aligned_flowlines.apply(lambda x: x.simplify(3))
+smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
+
+xsections = network_xsections(smoothed, line_spacing=3,
+                              line_width=100, point_spacing=1,
+                              subbasins=dataset['subbasin'])
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
-classified = classify_profiles(processed, 10)
+classified = classify_profiles(processed, 12)
+wall_points = classified.loc[classified['wallpoint']]
 
-
+floors = label_floors(wall_points, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15)
