@@ -9,19 +9,20 @@ from shapelysmooth import taubin_smooth
 from valleyfloor.process_topography import process_topography
 from valleyfloor.utils import setup_wbt
 
-from slopes.subbasins import label_subbasins
-from slopes.hillslopes import label_hillslopes
-from slopes.network_xsections import network_xsections
+from slopes.terrain.subbasins import label_subbasins
+from slopes.terrain.hillslopes import label_hillslopes
+from slopes.profile.network_xsections import network_xsections
 from slopes.utils import observe_values
-from slopes.preprocess_profile import preprocess_profiles
-from slopes.classify_profile import classify_profiles
-from slopes.classify_profile_max_ascent import classify_profiles_max_ascent
-from slopes.rough_out import rough_out_hand
+from slopes.profile.preprocess_profile import preprocess_profiles
+from slopes.profile.classify_profile import classify_profiles
+from slopes.reach.rough_out import rough_out_hand
+from slopes.geometry.centerline import polygon_centerline
+from slopes.geometry.width import polygon_widths
 
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
-dem = rxr.open_rasterio("/Users/arthurkoehl/programs/pasternack/ca-river-valleys/data/180500050303/180500050303-dem.tif", masked=True).squeeze()
-flowlines = gpd.read_file("~/programs/pasternack/ca-river-valleys/data/180500050303/180500050303-flowlines.shp")
+dem = rxr.open_rasterio("./data/input/dem.tif", masked=True).squeeze()
+flowlines = gpd.read_file("./data/input/flowlines.shp")
 flowlines.crs = dem.rio.crs
 
 dataset, aligned_flowlines = process_topography(dem, flowlines, wbt)

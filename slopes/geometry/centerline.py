@@ -23,9 +23,9 @@ from shapely.geometry import Point, Polygon, LineString
 from shapelysmooth import taubin_smooth  # prefer taubin unless need to preserve nodes
 from shapelysmooth import chaikin_smooth
 
-from slopes.geom_utils import add_point_to_polygon_exterior
-from slopes.geom_utils import extend_linestring
-from slopes.geom_utils import create_points_along_boundary
+from slopes.geometry.geom_utils import add_point_to_polygon_exterior
+from slopes.geometry.geom_utils import extend_linestring
+from slopes.geometry.geom_utils import create_points_along_boundary
 
 
 def polygon_centerline(polygon, num_points, source=None, target=None,

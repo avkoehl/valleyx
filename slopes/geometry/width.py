@@ -4,7 +4,7 @@
 import geopandas as gpd
 
 from slopes.geometry.cross_section import get_cross_section_lines
-from slopes.geometry.utils import get_length_and_width
+from slopes.geometry.geom_utils import get_length_and_width
 
 def polygon_widths(polygon, centerline, spacing=30):
     """
