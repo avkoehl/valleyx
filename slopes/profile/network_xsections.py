@@ -4,14 +4,12 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 import geopandas as gpd
-
-from valleyfloor.raster.vectorize import single_polygon_from_binary_raster
-from valleyfloor.geometry.utils import get_length_and_width
-
-from valleyfloor.geometry.cross_section import get_points_on_linestring
-from valleyfloor.geometry.cross_section import get_cross_section_points_from_points
-from valleyfloor.geometry.utils import get_length_and_width
 from shapely.geometry import LineString
+from valleyfloor.raster.vectorize import single_polygon_from_binary_raster
+
+from slopes.geometry.geom_utils import get_length_and_width
+from slopes.geometry.cross_section import get_points_on_linestring
+from slopes.geometry.cross_section import get_cross_section_points_from_points
 
 def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
                       int, point_spacing: int, subbasins:
