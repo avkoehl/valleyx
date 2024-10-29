@@ -111,3 +111,37 @@ def _pour_points_from_flowpaths(flow_paths: xr.DataArray, flow_acc:
     pour_points = gpd.GeoSeries(pour_points_list, crs=flow_paths.rio.crs)
     pour_points = translate_to_wbt(pour_points, flow_paths.rio.resolution())
     return pour_points
+
+def label_subbasins_pour_points(flow_dir: xr.DataArray, pour_points: gpd.GeoSeries, wbt: WhiteboxTools) -> xr.DataArray:
+    """
+    input:
+       flow dir 
+       pour points
+    output:
+       watersheds
+    """
+    work_dir = wbt.work_dir
+    files = {
+            'temp_flowdir': os.path.join(work_dir, 'temp_flowdir.tif'),
+            'temp_pour_points': os.path.join(work_dir, 'temp_pour_points.shp'),
+            'subbasins': os.path.join(work_dir, 'subbasins.tif')}
+    
+    flow_dir.rio.to_raster(files['temp_flowdir'])
+    pour_points.to_file(files['temp_pour_points'])
+
+    wbt.watershed(
+            files['temp_flowdir'],
+            files['temp_pour_points'],
+            files['subbasins'],
+            esri_pntr=False)
+
+    subbasins = rxr.open_rasterio(files['subbasins'], masked=True).squeeze()
+
+    os.remove(files['temp_flowdir'])
+    os.remove(files['temp_pour_points'])
+    # also remove derivatives
+    os.remove(os.path.join(work_dir, 'temp_pour_points.shx'))
+    os.remove(os.path.join(work_dir, 'temp_pour_points.dbf'))
+    os.remove(os.path.join(work_dir, 'temp_pour_points.prj'))
+    os.remove(os.path.join(work_dir, 'temp_pour_points.cpg'))
+    return subbasins

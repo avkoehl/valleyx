@@ -15,9 +15,11 @@ from slopes.profile.network_xsections import network_xsections
 from slopes.utils import observe_values
 from slopes.profile.preprocess_profile import preprocess_profiles
 from slopes.profile.classify_profile import classify_profiles
-from slopes.reach.rough_out import rough_out_hand
 from slopes.geometry.centerline import polygon_centerline
 from slopes.geometry.width import polygon_widths
+from slopes.reach.reaches import delineate_reaches
+
+logger.enable('slopes')
 
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
@@ -33,53 +35,17 @@ dataset['hillslope'] = label_hillslopes(dataset['flowpaths'], dataset['flow_dir'
 
 dataset = dataset.rename({'flowpaths': 'flow_path', 'smoothed_dem': 'dem'})
 
-flowlines = []
-ids = []
-for streamID, linestring in aligned_flowlines.items():
-    linestring = linestring.simplify(3)
-    linestring = chaikin_smooth(taubin_smooth(linestring))
-    ids.append(streamID)
-    flowlines.append(linestring)
-flowlines = gpd.GeoSeries(flowlines, index=ids, crs=dem.rio.crs)
+dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
 
-xsections = network_xsections(flowlines, line_spacing=30,
+smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
+smoothed = flowlines_reaches.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
+
+xsections = network_xsections(smoothed, line_spacing=30,
                               line_width=100, point_spacing=10,
-                              subbasins=dataset['subbasin'])
-
+                              subbasins=dataset['subbasins'])
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
-
 classified = classify_profiles(processed, 10)
-classified_two = classify_profiles_max_ascent(processed, dem, dataset['slope'], 6, 10, wbt)
-
-
-# hand thresholds  
-wps = classified.loc[classified['wallpoint']]
-wps_two = classified_two.loc[classified_two['wallpoint']]
-
-thresholds = wps.groupby("streamID")['hand'].quantile(.80) # reachID
-thresholds
-
-thresholds2 = wps_two.groupby("streamID")['hand'].quantile(.80) # reachID
-thresholds2
-
-
-
-# rough out valley floors
-vfs = rough_out_hand(dataset['subbasin'], dataset['hand'], 10)
-inds = []
-lines = []
-for index,vf in vfs.items():
-    print(index)
-    flowline = aligned_flowlines.loc[index]
-    source = Point(flowline.coords[0])
-    target = Point(flowline.coords[-1])
-    centerline = polygon_centerline(vf, 200, source=source, target=target, simplify_tolerance=5, dist_tolerance = 100, smooth_output=True)
-    inds.append(index)
-    lines.append(centerline)
-
-results = gpd.GeoSeries(lines, index=inds, crs=dataset['subbasin'].rio.crs)
-
 
 

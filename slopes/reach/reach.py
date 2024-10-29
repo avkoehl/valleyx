@@ -31,14 +31,18 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 import ruptures as rpt
+from shapely.geometry import Point
 from shapely.ops import nearest_points
 
 from slopes.geometry.width import polygon_widths
 
-def segment_reaches(valley_floor, centerline, flowline, spacing=5):
+def segment_reaches(valley_floor, centerline, flowline, spacing):
     widths = polygon_widths(valley_floor, centerline, spacing=spacing)
     widths = _series_to_segments(widths, centerline, window=5, minsize=200)
     bp_inds = _change_point_inds(widths)
+
+    if len(bp_inds) == 0:
+        return None
 
     # get points along flowlines
     ppts = _pour_points(bp_inds, widths, flowline)
