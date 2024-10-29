@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import rioxarray as rxr
 import geopandas as gpd
 import numpy as np
+from shapely.geometry import Point
 from shapelysmooth import chaikin_smooth
 from shapelysmooth import taubin_smooth
 
@@ -15,11 +16,12 @@ from slopes.utils import observe_values
 from slopes.preprocess_profile import preprocess_profiles
 from slopes.classify_profile import classify_profiles
 from slopes.classify_profile_max_ascent import classify_profiles_max_ascent
+from slopes.rough_out import rough_out_hand
 
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
-dem = rxr.open_rasterio("./data/input/dem.tif", masked=True).squeeze()
-flowlines = gpd.read_file("./data/input/flowlines.shp")
+dem = rxr.open_rasterio("/Users/arthurkoehl/programs/pasternack/ca-river-valleys/data/180500050303/180500050303-dem.tif", masked=True).squeeze()
+flowlines = gpd.read_file("~/programs/pasternack/ca-river-valleys/data/180500050303/180500050303-flowlines.shp")
 flowlines.crs = dem.rio.crs
 
 dataset, aligned_flowlines = process_topography(dem, flowlines, wbt)
@@ -38,17 +40,17 @@ for streamID, linestring in aligned_flowlines.items():
     ids.append(streamID)
     flowlines.append(linestring)
 flowlines = gpd.GeoSeries(flowlines, index=ids, crs=dem.rio.crs)
-flowlines.to_file("smoothed.shp")
 
-xsections = network_xsections(flowlines, line_spacing=5,
-                              line_width=100, point_spacing=2,
+xsections = network_xsections(flowlines, line_spacing=30,
+                              line_width=100, point_spacing=10,
                               subbasins=dataset['subbasin'])
+
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
 
-classified = classify_profiles(processed, 12)
-classified_two = classify_profiles_max_ascent(processed, dem, dataset['slope'], 8, 14, wbt)
+classified = classify_profiles(processed, 10)
+classified_two = classify_profiles_max_ascent(processed, dem, dataset['slope'], 6, 10, wbt)
 
 
 # hand thresholds  
@@ -61,6 +63,22 @@ thresholds
 thresholds2 = wps_two.groupby("streamID")['hand'].quantile(.80) # reachID
 thresholds2
 
+
+
+# rough out valley floors
+vfs = rough_out_hand(dataset['subbasin'], dataset['hand'], 10)
+inds = []
+lines = []
+for index,vf in vfs.items():
+    print(index)
+    flowline = aligned_flowlines.loc[index]
+    source = Point(flowline.coords[0])
+    target = Point(flowline.coords[-1])
+    centerline = polygon_centerline(vf, 200, source=source, target=target, simplify_tolerance=5, dist_tolerance = 100, smooth_output=True)
+    inds.append(index)
+    lines.append(centerline)
+
+results = gpd.GeoSeries(lines, index=inds, crs=dataset['subbasin'].rio.crs)
 
 
 

@@ -2,6 +2,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 from scipy import signal
+from tqdm import tqdm
 
 from slopes.utils import split_profile
 
@@ -32,7 +33,7 @@ def classify_profiles(xsections: gpd.GeoDataFrame,
 
     # classify floor points and wall points on each profile
     processed_dfs = []
-    for (streamID, xsID), profile in xsections.groupby(['streamID', 'xsID']):
+    for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
         classified = profile.copy()
         classified['bp'] = False
         peaks = signal.find_peaks(-classified['curvature'])[0]
