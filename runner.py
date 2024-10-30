@@ -72,4 +72,5 @@ wall_points_two = classified_two.loc[classified_two['wallpoint']]
 wall_points_two.to_file('wp_max_ascent.shp')
 
 floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
+#floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
 floors.rio.to_raster('floors.tif')

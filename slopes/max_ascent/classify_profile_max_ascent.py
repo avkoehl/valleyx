@@ -66,11 +66,11 @@ def classify_profile_max_ascent(profile, fdir, dirmap, slope, num_cells, slope_t
 
     if pos_wall_loc is not None:
         # set the next location as wall
-        next_loc = pos.index[pos.index.get_loc(pos_wall_loc) + 1]
-        profile.loc[next_loc, "wallpoint"] = True
+        #next_loc = pos.index[pos.index.get_loc(pos_wall_loc) + 1]
+        profile.loc[pos_wall_loc, "wallpoint"] = True
     if neg_wall_loc is not None:
-        next_loc = neg.index[neg.index.get_loc(neg_wall_loc) + 1]
-        profile.loc[next_loc, "wallpoint"] = True
+        #next_loc = neg.index[neg.index.get_loc(neg_wall_loc) + 1]
+        profile.loc[neg_wall_loc, "wallpoint"] = True
     return profile
 
 def _find_wall_half_max_ascent(half_profile, fdir, dirmap, slope, num_cells, slope_threshold):
