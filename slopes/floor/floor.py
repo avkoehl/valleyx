@@ -24,7 +24,7 @@ def label_floors(wall_points, dataset, hillslope_threshold, plains_threshold, bu
     foundation_floor = foundation(dataset['slope'], dataset['flow_path'], plains_threshold)
 
     for streamID in finite_unique(dataset['subbasin']):
-        clipped_data = dataset.where(dataset['subbasins'] == streamID)
+        clipped_data = dataset.where(dataset['subbasin'] == streamID)
 
         points = wall_points.loc[wall_points['streamID'] == streamID]
     

@@ -3,10 +3,10 @@ import geopandas as gpd
 import numpy as np
 from tqdm import tqdm
 
-from slopes.flow_dir import flowdir_wbt
-from slopes.flow_dir import trace_flowpath
-from slopes.flow_dir import DIRMAPS
-from slopes.max_ascent import invert_dem
+from slopes.terrain.flow_dir import flowdir_wbt
+from slopes.terrain.flow_dir import trace_flowpath
+from slopes.terrain.flow_dir import DIRMAPS
+from slopes.max_ascent.max_ascent import invert_dem
 from slopes.utils import split_profile
 from slopes.utils import point_to_pixel
 from slopes.utils import pixel_to_point
@@ -65,9 +65,12 @@ def classify_profile_max_ascent(profile, fdir, dirmap, slope, num_cells, slope_t
     neg_wall_loc = _find_wall_half_max_ascent(neg, fdir, dirmap, slope, num_cells, slope_threshold)
 
     if pos_wall_loc is not None:
-        profile.loc[pos_wall_loc, "wallpoint"] = True
+        # set the next location as wall
+        next_loc = pos.index[pos.index.get_loc(pos_wall_loc) + 1]
+        profile.loc[next_loc, "wallpoint"] = True
     if neg_wall_loc is not None:
-        profile.loc[neg_wall_loc, "wallpoint"] = True
+        next_loc = neg.index[neg.index.get_loc(neg_wall_loc) + 1]
+        profile.loc[next_loc, "wallpoint"] = True
     return profile
 
 def _find_wall_half_max_ascent(half_profile, fdir, dirmap, slope, num_cells, slope_threshold):

@@ -7,9 +7,9 @@ import xarray as xr
 from whitebox import WhiteboxTools
 from skimage.morphology import isotropic_dilation
 
-from slopes.flow_dir import flowdir_wbt
-from slopes.flow_dir import trace_flowpath
-from slopes.flow_dir import DIRMAPS
+from slopes.terrain.flow_dir import flowdir_wbt
+from slopes.terrain.flow_dir import trace_flowpath
+from slopes.terrain.flow_dir import DIRMAPS
 from slopes.utils import finite_unique
 
 def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: int, wbt: WhiteboxTools):

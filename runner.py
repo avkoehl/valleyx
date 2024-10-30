@@ -19,6 +19,7 @@ from slopes.geometry.centerline import polygon_centerline
 from slopes.geometry.width import polygon_widths
 from slopes.reach.reaches import delineate_reaches
 from slopes.floor.floor import label_floors
+from slopes.max_ascent.classify_profile_max_ascent import classify_profiles_max_ascent
 
 logger.enable('slopes')
 
@@ -50,7 +51,9 @@ xsections = network_xsections(smoothed, line_spacing=3,
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
-classified = classify_profiles(processed, 12)
+classified = classify_profiles(processed, 14)
+classified_two = classify_profiles_max_ascent(processed, dataset['conditioned_dem'], dataset['slope'], 8, 12, wbt)
 wall_points = classified.loc[classified['wallpoint']]
+wall_points_two = classified_two.loc[classified_two['wallpoint']]
 
-floors = label_floors(wall_points, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15)
+floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15)
