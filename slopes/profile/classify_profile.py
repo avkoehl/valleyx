@@ -36,7 +36,7 @@ def classify_profiles(xsections: gpd.GeoDataFrame,
     for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
         classified = profile.copy()
         classified['bp'] = False
-        peaks = signal.find_peaks(-classified['curvature'], distance=3)[0]
+        peaks = signal.find_peaks(-classified['curvature'], distance=3, height=0.01)[0]
         profile.loc[profile.index[peaks], 'bp'] = True
 
         classified = classify_profile_slope_threshold(profile, slope_threshold)
