@@ -6,8 +6,8 @@ from shapely.geometry import Point
 from shapelysmooth import chaikin_smooth
 from shapelysmooth import taubin_smooth
 from loguru import logger
+import xarray as xr
 
-from valleyfloor.process_topography import process_topography
 from valleyfloor.utils import setup_wbt
 
 from slopes.terrain.subbasins import label_subbasins
@@ -21,29 +21,43 @@ from slopes.geometry.width import polygon_widths
 from slopes.reach.reaches import delineate_reaches
 from slopes.floor.floor import label_floors
 from slopes.max_ascent.classify_profile_max_ascent import classify_profiles_max_ascent
+from slopes.terrain.flow_acc import flow_accumulation_workflow
+from slopes.terrain.align_flowlines import align_flowlines
+from slopes.terrain.surface import elev_derivatives
+from slopes.terrain.hand import channel_relief
 
 logger.enable('slopes')
-
 
 wbt = setup_wbt("~/opt/WBT", "./working_dir")
 dem = rxr.open_rasterio("./data/input/dem.tif", masked=True).squeeze()
 flowlines = gpd.read_file("./data/input/flowlines.shp")
 flowlines.crs = dem.rio.crs
 
-dataset, aligned_flowlines = process_topography(dem, flowlines, wbt)
-aligned_flowlines = gpd.GeoSeries(aligned_flowlines['geometry'].values, index=aligned_flowlines['Stream_ID'])
+conditioned, flow_dir, flow_acc = flow_accumulation_workflow(dem, wbt)
+aligned_flowlines, flowpaths = align_flowlines(flowlines, flow_acc, flow_dir, wbt)
+smoothed, slope, curvature = elev_derivatives(conditioned, wbt, sigma=5)
+hand = channel_relief(conditioned, flowpaths, wbt, method='d8')
 
-dataset['subbasin'] = label_subbasins(dataset['flow_dir'], dataset['flow_acc'], dataset['flowpaths'], wbt)
-dataset['hillslope'] = label_hillslopes(dataset['flowpaths'], dataset['flow_dir'], dataset['subbasin'], wbt) 
+dataset = xr.Dataset()
+dataset['conditioned_dem'] = conditioned
+dataset['flow_dir'] = flow_dir
+dataset['flow_acc'] = flow_acc
+dataset['flow_path'] = flowpaths
+dataset['hand'] = hand
+dataset['dem'] = smoothed
+dataset['slope'] = slope
+dataset['curvature'] = curvature
 
-dataset = dataset.rename({'flowpaths': 'flow_path', 'smoothed_dem': 'dem'})
+dataset['subbasin'] = label_subbasins(dataset['flow_dir'], dataset['flow_acc'], dataset['flow_path'], wbt)
+dataset['hillslope'] = label_hillslopes(dataset['flow_path'], dataset['flow_dir'], dataset['subbasin'], wbt) 
 
-#dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
-#smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
-#smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 
-smoothed = aligned_flowlines.apply(lambda x: x.simplify(3))
+dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
+smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
 smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
+
+#smoothed = aligned_flowlines.apply(lambda x: x.simplify(3))
+#smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 
 xsections = network_xsections(smoothed, line_spacing=3,
                               line_width=100, point_spacing=1,
