@@ -62,6 +62,7 @@ def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
 
     order = ['geom', 'pointID', 'streamID', 'xsID', 'alpha']
     xsections = xsections[order]
+    xsections.crs = flowlines.crs
     return xsections
 
 def flowline_xsections(flowline: LineString, line_spacing: int, line_width:

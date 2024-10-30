@@ -5,6 +5,7 @@ import numpy as np
 from shapely.geometry import Point
 from shapelysmooth import chaikin_smooth
 from shapelysmooth import taubin_smooth
+from loguru import logger
 
 from valleyfloor.process_topography import process_topography
 from valleyfloor.utils import setup_wbt
@@ -37,8 +38,7 @@ dataset['hillslope'] = label_hillslopes(dataset['flowpaths'], dataset['flow_dir'
 
 dataset = dataset.rename({'flowpaths': 'flow_path', 'smoothed_dem': 'dem'})
 
-dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
-
+#dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
 #smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
 #smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 
@@ -51,9 +51,11 @@ xsections = network_xsections(smoothed, line_spacing=3,
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
-classified = classify_profiles(processed, 14)
-classified_two = classify_profiles_max_ascent(processed, dataset['conditioned_dem'], dataset['slope'], 8, 12, wbt)
+classified = classify_profiles(processed, 12, distance=3, height=0.02)
+classified_two = classify_profiles_max_ascent(processed, dataset['dem'], dataset['slope'], 6, 12, wbt)
 wall_points = classified.loc[classified['wallpoint']]
 wall_points_two = classified_two.loc[classified_two['wallpoint']]
+wall_points_two.to_file('wp_max_ascent.shp')
 
-floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15)
+floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
+floors.rio.to_raster('floors.tif')

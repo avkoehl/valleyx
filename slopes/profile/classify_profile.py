@@ -6,8 +6,8 @@ from tqdm import tqdm
 
 from slopes.utils import split_profile
 
-def classify_profiles(xsections: gpd.GeoDataFrame, 
-                      slope_threshold: int) -> gpd.GeoDataFrame: 
+def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold: int,
+                      distance: int, height: float) -> gpd.GeoDataFrame: 
     """
     Find the wall points for a stream network's cross sections.
     Using a slope threshold
@@ -19,6 +19,11 @@ def classify_profiles(xsections: gpd.GeoDataFrame,
     slope_threshold: int
         maximum slope of a region in the cross section before it gets
         classified as valley wall
+    distance: int
+        distance parameter of signal.find_peaks
+    height: float
+        height parameter of signal.find_peaks
+
 
     Returns
     -------
@@ -36,10 +41,10 @@ def classify_profiles(xsections: gpd.GeoDataFrame,
     for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
         classified = profile.copy()
         classified['bp'] = False
-        peaks = signal.find_peaks(-classified['curvature'], distance=3, height=0.01)[0]
-        profile.loc[profile.index[peaks], 'bp'] = True
+        peaks = signal.find_peaks(-classified['curvature'], distance=distance, height=height)[0]
+        classified.loc[profile.index[peaks], 'bp'] = True
 
-        classified = classify_profile_slope_threshold(profile, slope_threshold)
+        classified = classify_profile_slope_threshold(classified, slope_threshold)
         processed_dfs.append(classified)
 
     processed_df = gpd.GeoDataFrame(pd.concat(processed_dfs, ignore_index=True))

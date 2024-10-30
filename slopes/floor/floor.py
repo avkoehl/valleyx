@@ -15,7 +15,7 @@ def check_dataset(dataset):
         if key not in dataset:
             raise ValueError(f"raster missing in dataset: {key}")
 
-def label_floors(wall_points, dataset, hillslope_threshold, plains_threshold, buffer, min_points):
+def label_floors(wall_points, dataset, hillslope_threshold, plains_threshold, buffer, min_points, percentile):
     check_dataset(dataset)
 
     floors = dataset['subbasin'].copy()
@@ -31,7 +31,7 @@ def label_floors(wall_points, dataset, hillslope_threshold, plains_threshold, bu
         if points is not None:
             floor = subbasin_floor(points, clipped_data['slope'], clipped_data['hillslope'], 
                                clipped_data['hand'], clipped_data['flow_path'], 
-                               hillslope_threshold, min_points, buffer)
+                               hillslope_threshold, min_points, buffer, percentile)
             floors = floors | floor
         else:
             continue # no floor for subbasin other than the foundation
@@ -51,7 +51,7 @@ def label_floors(wall_points, dataset, hillslope_threshold, plains_threshold, bu
     return combined
 
 def subbasin_floor(all_wall_points, slope, hillslopes, hand, flowpaths, 
-                   hillslope_threshold, min_points, buffer):
+                   hillslope_threshold, min_points, buffer, percentile):
     """ 
     Get valley floor for single subbasin given clipped input data 
     Logic:
@@ -75,7 +75,7 @@ def subbasin_floor(all_wall_points, slope, hillslopes, hand, flowpaths,
         if len(points) >= min_points:
             h_hand = hand.where(hillslopes == hillslope)
             h_slope = slope.where(hillslopes == hillslope)
-            hand_threshold = points['hand'].describe()['75%'].item()
+            hand_threshold = np.quantile(points['hand'], percentile)
             hand_threshold += buffer
             hs_floor = hand_threshold_floor(h_hand, h_slope, hand_threshold, hillslope_threshold)
             #print('\t\t hand threshold:', hand_threshold,  hs_floor.sum().item())
