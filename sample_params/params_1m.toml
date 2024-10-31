@@ -30,4 +30,4 @@ slope_threshold = 12
 # floor threhsolds
 buffer = 1
 min_points = 15
-quantile = 0.90
+quantile = 0.80

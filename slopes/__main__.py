@@ -93,13 +93,13 @@ def wall_points_max_ascent(profiles, num_cells, dem, slope, slope_threshold, wbt
     classified = classify_profiles_max_ascent(
         profiles, dem, slope, num_cells, slope_threshold, wbt
     )
-    wall_points = classified.loc[classified["wallpoints"]]
+    wall_points = classified.loc[classified["wallpoint"]]
     return wall_points
 
 
 def wall_points_curv(profiles, slope_threshold, distance, height):
     classified = classify_profiles(profiles, slope_threshold, distance, height)
-    wall_points = classified.loc[classified["wallpoints"]]
+    wall_points = classified.loc[classified["wallpoint"]]
     return wall_points
 
 
@@ -126,7 +126,7 @@ def main(
     plains_threshold=4,
     buffer=1,
     min_points=15,
-    quantile=0.90,
+    quantile=0.80,
 ):
 
 
@@ -142,7 +142,7 @@ def main(
         line_spacing,
         line_width,
         point_spacing,
-        dataset["subbasins"],
+        dataset["subbasin"],
         min_hand_jump,
         ratio,
         min_distance,
