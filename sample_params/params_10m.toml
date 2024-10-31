@@ -3,7 +3,9 @@ sigma = 3
 
 # reach segmentation params
 num_points = 200
-spacing = 50
+spacing = 20
+minsize = 200
+window = 4
 
 # xsection params:
 line_spacing = 10

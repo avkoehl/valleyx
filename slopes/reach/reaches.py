@@ -22,22 +22,22 @@ from slopes.terrain.hillslopes import wbt_label_drainage_sides
 
 logger.disable("slopes")
 
-def delineate_reaches(dataset, flowlines, wbt, num_points, spacing):
+def delineate_reaches(dataset, flowlines, wbt, num_points, spacing, minsize, window):
     logger.info("Rough out valley floors")
     vfs = rough_out_hand(dataset['subbasin'], dataset['hand'], 10)
     logger.info("Segment into reaches")
     result = reach_subbasins(vfs, dataset['flow_path'], flowlines, 
                              dataset['flow_acc'], dataset['flow_dir'], 
-                             wbt, num_points, spacing)
+                             wbt, num_points, spacing, minsize, window)
 
     dataset['flow_path'] = result['flowpaths_reaches']
     dataset['subbasin'] = result['subbasins']
     dataset['hillslope'] = result['hillslopes']
     return dataset, result['flowlines_reaches']
 
-def reach_subbasins(valley_floors, flowpaths, flowlines, flow_acc, flow_dir, wbt, num_points, spacing):
+def reach_subbasins(valley_floors, flowpaths, flowlines, flow_acc, flow_dir, wbt, num_points, spacing, minsize, window):
     logger.info("get points that represent the breaks")
-    fpcells, flowline_points, flowpath_points = _compute_reaches(valley_floors, flowpaths, flowlines, flow_acc, num_points, spacing)
+    fpcells, flowline_points, flowpath_points = _compute_reaches(valley_floors, flowpaths, flowlines, flow_acc, num_points, spacing, minsize, window)
     logger.info("relabel things")
     flowpaths_reaches = _relabel_flowpaths(fpcells, flowpaths)
     flowlines_reaches = flowpath_to_flowlines(flowpaths_reaches, flow_dir, wbt)
@@ -57,7 +57,7 @@ def reach_subbasins(valley_floors, flowpaths, flowlines, flow_acc, flow_dir, wbt
             'subbasins': subbasins,
             'hillslopes': hillslopes}
 
-def _compute_reaches(valley_floors, flowpaths, flowlines, flow_acc, num_points, spacing):
+def _compute_reaches(valley_floors, flowpaths, flowlines, flow_acc, num_points, spacing, minsize, window):
     all_flowpath_cells = gpd.GeoDataFrame()
     all_points = gpd.GeoDataFrame()
     all_points_snapped = gpd.GeoDataFrame()
@@ -75,14 +75,17 @@ def _compute_reaches(valley_floors, flowpaths, flowlines, flow_acc, num_points, 
         target = Point(flowline.coords[-1])
         centerline = polygon_centerline(valley_floor, num_points=num_points, source=source, target=target, simplify_tolerance = 5, dist_tolerance = 100, smooth_output=True)
 
-        points = segment_reaches(valley_floor, centerline, flowline, spacing)
         flowpath_cells = _flowpath_cells(flowpath, flow_acc)
+
+        points = segment_reaches(valley_floor, centerline, flowline, spacing, minsize, window)
 
         if points is not None:
             snapped_points = _snap_to_flowpath(points, flowpath_cells)
-            snapped_points.crs = flowlines.crs
+            snapped_points = pd.concat([snapped_points, flowpath_cells.iloc[[-1]]], ignore_index=True)
+            points = pd.concat([points, gpd.GeoSeries(target)], ignore_index=True)
         else:
             snapped_points = flowpath_cells.iloc[[-1]]
+            points = gpd.GeoSeries(target, crs=flow_acc.rio.crs)
 
         flowpath_cells = _assign_reach_id(flowpath_cells, snapped_points['cell_id'])
         all_flowpath_cells = pd.concat([all_flowpath_cells, flowpath_cells], ignore_index=True)

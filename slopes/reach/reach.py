@@ -36,9 +36,12 @@ from shapely.ops import nearest_points
 
 from slopes.geometry.width import polygon_widths
 
-def segment_reaches(valley_floor, centerline, flowline, spacing):
+def segment_reaches(valley_floor, centerline, flowline, spacing, window, minsize):
+    if centerline.length < minsize:
+        return None
+
     widths = polygon_widths(valley_floor, centerline, spacing=spacing)
-    widths = _series_to_segments(widths, centerline, window=5, minsize=200)
+    widths = _series_to_segments(widths, centerline, window=window, minsize=minsize)
     bp_inds = _change_point_inds(widths)
 
     if len(bp_inds) == 0:
@@ -49,7 +52,7 @@ def segment_reaches(valley_floor, centerline, flowline, spacing):
     return ppts
 
 # -- internal
-def _series_to_segments(widths, centerline, window=5, minsize=200):
+def _series_to_segments(widths, centerline, window, minsize):
     bp_inds = _breakpoint_inds(widths['width'], window=window)
     widths = _add_segment_id_column(bp_inds, widths)
     widths = _group_segments(widths)

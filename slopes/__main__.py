@@ -25,7 +25,7 @@ from slopes.terrain.hand import channel_relief
 
 
 def setup_wbt(working_dir, verbose=False):
-    wbt = whitebox.WhiteBoxTools()
+    wbt = whitebox.WhiteboxTools()
     wbt.set_working_dir(os.path.abspath(os.path.expanduser(working_dir)))
     wbt.verbose = verbose
     return wbt
@@ -36,7 +36,7 @@ def load_input(dem_path, flowline_path):
     flowlines = gpd.read_file(flowline_path)
     if flowlines.crs is None:
         flowlines.crs = dem.rio.crs
-    return flowlines
+    return dem, flowlines
 
 
 def process_topography(dem, flowlines, wbt, sigma):
@@ -110,6 +110,8 @@ def main(
     num_points=200,
     sigma = 3,
     spacing=30,
+    minsize= 200,
+    window = 4,
     line_spacing=3,
     line_width=100,
     point_spacing=1,
@@ -130,7 +132,7 @@ def main(
 
     dataset, aligned_flowlines = process_topography(dem, flowlines, wbt, sigma)
     dataset, flowlines_reaches = delineate_reaches(
-        dataset, aligned_flowlines, wbt, num_points, spacing
+        dataset, aligned_flowlines, wbt, num_points, spacing, minsize, window
     )
     flowlines = smooth_flowlines(flowlines_reaches)
 
