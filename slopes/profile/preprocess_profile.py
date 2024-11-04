@@ -1,3 +1,5 @@
+from typing import Optional
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -115,33 +117,26 @@ def _filter_by_peaks(profile: gpd.GeoDataFrame, min_prominence: float) -> gpd.Ge
     gpd.GeoDataFrame
         Profile truncated at first significant peaks if found, otherwise unchanged
     """
-    def find_first_peak(dem: np.ndarray, alpha: np.ndarray) -> Optional[float]:
-        """Find the alpha value of the first significant peak in elevation"""
+    def find_first_peak(profile, min_prominence):
         # Find peaks that meet prominence threshold
-        peaks, properties = signal.find_peaks(dem, prominence=min_prominence)
+        peaks, properties = signal.find_peaks(profile['dem'], prominence=min_prominence)
         
-        # Return alpha value of first peak if any found, otherwise None
-        return alpha[peaks[0]] if len(peaks) > 0 else None
+        if len(peaks) > 0:
+            first_peak = peaks[0]
+            return profile.iloc[0:first_peak]
+        else:
+            return profile
+        
     
     # Split profile into positive and negative alpha sections
     pos, neg = split_profile(profile)
     
     # Process positive side
     if not pos.empty:
-        first_peak_pos = find_first_peak(pos['dem'].values, pos['alpha'].values)
-        if first_peak_pos is not None:
-            pos = pos[pos['alpha'] <= first_peak_pos]
-    
-    # Process negative side
+        pos = find_first_peak(pos, min_prominence)
     if not neg.empty:
-        # Flip negative side arrays for peak detection
-        first_peak_neg = find_first_peak(
-            neg['dem'].values[::-1],  # Flip elevation values
-            neg['alpha'].values[::-1]  # Flip alpha values
-        )
-        if first_peak_neg is not None:
-            neg = neg[neg['alpha'] <= first_peak_neg]
-    
+        neg = find_first_peak(neg, min_prominence)
+   
     # Combine filtered sides
     return _combine_profile(pos, neg)
 
