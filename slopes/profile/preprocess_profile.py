@@ -179,6 +179,7 @@ def _recenter_on_stream(profile: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     gpd.GeoDataFrame
         Profile recentered on the stream location
     """
+    profile = profile.copy()
     streamID = profile['streamID'].iloc[0]
     fp_points = profile['flow_path'] == streamID
     

@@ -118,15 +118,54 @@ def observe_values(points: gpd.GeoDataFrame, grid: xr.DataArray | xr.Dataset):
     
     """
     results = points.copy()
-    #xs = xr.DataArray(points.geometry.x.values, dims='z')
-    #ys = xr.DataArray(points.geometry.y.values, dims='z')
-    ys = xr.DataArray(points.geometry.x.values, dims='z')
-    xs = xr.DataArray(points.geometry.y.values, dims='z')
-    values = grid.sel(x=xs, y=ys, method='Nearest')
+    xs = xr.DataArray(points.geometry.x.values, dims='z')
+    ys = xr.DataArray(points.geometry.y.values, dims='z')
+    values = grid.sel(x=xs, y=ys, method='nearest')
 
     if isinstance(values, xr.Dataset):
         for key in values:
-            results[key] = values[key].values
+            band_values = set_outside_bounds_nan(values[key], xs, ys, grid.rio.bounds())
+            results[key] = band_values.values
     else:
+        values = set_outside_bounds_nan(values, xs, ys, grid.rio.bounds())
         results['value'] = values.values
+
+    # filter by bounds
     return results
+
+def set_outside_bounds_nan(values, xs, ys, bounds):
+    """
+    Set values to NaN if their coordinates fall outside raster bounds.
+    
+    Parameters:
+    -----------
+    values : numpy.ndarray
+        Values from grid.sel(x=xs, y=ys)
+    xs : array-like
+        X coordinates of points
+    ys : array-like
+        Y coordinates of points
+    bounds : tuple
+        Raster bounds as (xmin, ymin, xmax, ymax)
+        
+    Returns:
+    --------
+    numpy.ndarray
+        Array with values outside bounds set to NaN
+    """
+    # Convert values to float array to handle NaN
+    values = values.astype(float)
+    
+    # Create mask for points outside bounds
+    xmin, ymin, xmax, ymax = bounds
+    outside_mask = (
+        (np.array(xs) < xmin) | 
+        (np.array(xs) > xmax) | 
+        (np.array(ys) < ymin) | 
+        (np.array(ys) > ymax)
+    )
+    
+    # Set values to NaN where mask is True
+    values[outside_mask] = np.nan
+    
+    return values
