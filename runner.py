@@ -13,7 +13,7 @@ from valleyfloor.utils import setup_wbt
 from slopes.terrain.subbasins import label_subbasins
 from slopes.terrain.hillslopes import label_hillslopes
 from slopes.profile.network_xsections import network_xsections
-from slopes.utils import observe_values
+from slopes.profile.network_xsections import observe_values
 from slopes.profile.preprocess_profile import preprocess_profiles
 from slopes.profile.classify_profile import classify_profiles
 from slopes.geometry.centerline import polygon_centerline
@@ -52,19 +52,22 @@ dataset['subbasin'] = label_subbasins(dataset['flow_dir'], dataset['flow_acc'], 
 dataset['hillslope'] = label_hillslopes(dataset['flow_path'], dataset['flow_dir'], dataset['subbasin'], wbt) 
 
 
-dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30)
+dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30, minsize=100, window=5)
 smoothed = flowlines_reaches.apply(lambda x: x.simplify(3))
 smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 
 #smoothed = aligned_flowlines.apply(lambda x: x.simplify(3))
 #smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 
-xsections = network_xsections(smoothed, line_spacing=3,
-                              line_width=100, point_spacing=1,
-                              subbasins=dataset['subbasin'])
+#xsections = network_xsections(smoothed, line_spacing=5,
+#                              line_width=100, point_spacing=5,
+#                              subbasins=dataset['subbasin'])
+xsections = network_xsections(smoothed, line_spacing=5,
+                              line_width=100, point_spacing=5)
+
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
-processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=2.5, min_distance=5)
+processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=5, min_distance=5, min_peak_prominence=10)
 classified = classify_profiles(processed, 12, distance=3, height=0.02)
 classified_two = classify_profiles_max_ascent(processed, dataset['dem'], dataset['slope'], 6, 12, wbt)
 wall_points = classified.loc[classified['wallpoint']]
