@@ -117,13 +117,16 @@ def observe_values(points: gpd.GeoDataFrame, grid: xr.DataArray | xr.Dataset):
           layer, named according to the 'datavar' attribute of the layer.
     
     """
-    xs = xr.DataArray(points.geometry.x.values, dims='z')
-    ys = xr.DataArray(points.geometry.y.values, dims='z')
-    values = grid.sel(x=xs, y=ys, method='nearest')
+    results = points.copy()
+    #xs = xr.DataArray(points.geometry.x.values, dims='z')
+    #ys = xr.DataArray(points.geometry.y.values, dims='z')
+    ys = xr.DataArray(points.geometry.x.values, dims='z')
+    xs = xr.DataArray(points.geometry.y.values, dims='z')
+    values = grid.sel(x=xs, y=ys, method='Nearest')
 
     if isinstance(values, xr.Dataset):
         for key in values:
-            points[key] = values[key].values
+            results[key] = values[key].values
     else:
-        points['value'] = values.values
-    return points
+        results['value'] = values.values
+    return results
