@@ -35,7 +35,7 @@ flowlines.crs = dem.rio.crs
 
 conditioned, flow_dir, flow_acc = flow_accumulation_workflow(dem, wbt)
 aligned_flowlines, flowpaths = align_flowlines(flowlines, flow_acc, flow_dir, wbt)
-smoothed, slope, curvature = elev_derivatives(conditioned, wbt, sigma=5)
+smoothed, slope, curvature = elev_derivatives(conditioned, wbt, sigma=.75)
 hand = channel_relief(conditioned, flowpaths, wbt, method='d8')
 
 dataset = xr.Dataset()
@@ -68,7 +68,8 @@ xsections = network_xsections(smoothed, line_spacing=5,
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=5, min_distance=5, min_peak_prominence=10)
-classified = classify_profiles(processed, 12, distance=3, height=0.02)
+classified = classify_profiles(processed, 12, distance=1, height=0.01)
+classified.loc[classified['bp']].to_file('bps.shp')
 classified_two = classify_profiles_max_ascent(processed, dataset['dem'], dataset['slope'], 6, 12, wbt)
 wall_points = classified.loc[classified['wallpoint']]
 wall_points_two = classified_two.loc[classified_two['wallpoint']]
