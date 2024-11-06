@@ -8,8 +8,8 @@ from shapelysmooth import taubin_smooth
 from loguru import logger
 import xarray as xr
 
-from valleyfloor.utils import setup_wbt
 
+from slopes.__main__import setup_wbt
 from slopes.terrain.subbasins import label_subbasins
 from slopes.terrain.hillslopes import label_hillslopes
 from slopes.profile.network_xsections import network_xsections
@@ -28,7 +28,7 @@ from slopes.terrain.hand import channel_relief
 
 logger.enable('slopes')
 
-wbt = setup_wbt("~/opt/WBT", "./working_dir")
+wbt = setup_wbt("./working_dir")
 dem = rxr.open_rasterio("./data/input/dem.tif", masked=True).squeeze()
 flowlines = gpd.read_file("./data/input/flowlines.shp")
 flowlines.crs = dem.rio.crs

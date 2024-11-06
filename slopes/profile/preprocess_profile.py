@@ -5,7 +5,8 @@ import pandas as pd
 import numpy as np
 from scipy import signal
 
-from slopes.utils import split_profile
+from slopes.profile.split import split_profile
+from slopes.profile.split import combine_profile
 
 def preprocess_profiles(
     xsections: gpd.GeoDataFrame,
@@ -138,7 +139,7 @@ def _filter_by_peaks(profile: gpd.GeoDataFrame, min_prominence: float) -> gpd.Ge
         neg = find_first_peak(neg, min_prominence)
    
     # Combine filtered sides
-    return _combine_profile(pos, neg)
+    return combine_profile(pos, neg)
 
 def _remove_duplicates(profile: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
@@ -255,7 +256,7 @@ def _filter_ridge_crossing(
     pos = pos.loc[_filter_ratio(pos['hand'], pos['dem'], ratio, min_hand_jump)]
     neg = neg.loc[_filter_ratio(neg['hand'], neg['dem'], ratio, min_hand_jump)]
     
-    return _combine_profile(pos, neg)
+    return combine_profile(pos, neg)
 
 def _ensure_no_gaps(profile: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """
@@ -288,23 +289,4 @@ def _ensure_no_gaps(profile: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     pos = pos.loc[_filter_max_increment(pos['alpha'], max_increment).index]
     neg = neg.loc[_filter_max_increment(neg['alpha'], max_increment).index]
     
-    return _combine_profile(pos, neg)
-
-def _combine_profile(pos: gpd.GeoDataFrame, neg: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    """
-    Combine positive and negative sides of a profile into a single sorted DataFrame.
-    
-    Parameters
-    ----------
-    pos : gpd.GeoDataFrame
-        Profile points with positive alpha values
-    neg : gpd.GeoDataFrame
-        Profile points with negative alpha values
-        
-    Returns
-    -------
-    gpd.GeoDataFrame
-        Combined and sorted profile
-    """
-    neg['alpha'] = neg['alpha'] * -1
-    return pd.concat([pos, neg]).sort_values('alpha')
+    return combine_profile(pos, neg)

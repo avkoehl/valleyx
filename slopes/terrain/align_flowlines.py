@@ -22,7 +22,6 @@ import geopandas as gpd
 import rioxarray as rxr
 import shapely
 from shapely.geometry import Point
-from valleyfloor.raster.utils import rioxarray_sample_points
 
 def flowlines2net(flowlines):
     """ assumes line.coords[0] is start of flowline and line.coords[-1] is end """
@@ -119,7 +118,9 @@ def align_flowlines(flowlines, flow_acc, flow_dir, wbt):
 
 def get_inlet_and_outlet_points(flowline, flow_acc):
     coords = gpd.GeoSeries([Point(flowline.coords[0]), Point(flowline.coords[-1])])
-    fa = rioxarray_sample_points(flow_acc, coords)
+    xs = xr.DataArray(coords.geometry.x.values, dims='z')
+    ys = xr.DataArray(coords.geometry.y.values, dims='z')
+    fa = flow_acc.sel(x=xs, y=ys, method='nearest').values
     coords = coords.iloc[fa.argsort()]
     start = coords.iloc[0]
     end = coords.iloc[1]

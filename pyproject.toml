@@ -18,13 +18,13 @@ pandas = "^2.2.3"
 scipy = "^1.14.1"
 scikit-image = "^0.24.0"
 ipython = "^8.28.0"
-valleyfloor = { git = 'ssh://git@github.com/avkoehl/valleyfloor.git', branch = 'main' }
 shapelysmooth = "^0.2.1"
 scikit-learn = "^1.5.2"
 rdp = "^0.8"
 seaborn = "^0.13.2"
 pysheds = "^0.4"
 tqdm = "^4.66.5"
+numba = "^0.60.0"
 
 [build-system]
 requires = ["poetry-core"]

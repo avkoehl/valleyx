@@ -1,7 +1,8 @@
 import geopandas as gpd
 import numpy as np
 from scipy.ndimage import binary_fill_holes
-from valleyfloor.raster.vectorize import single_polygon_from_binary_raster
+
+from slopes.raster.vectorize import single_polygon_from_binary_raster
 
 def rough_out_hand(subbasins, hand, threshold):
     stream_ids = np.unique(subbasins)

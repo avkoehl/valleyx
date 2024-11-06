@@ -17,7 +17,7 @@ from skimage.morphology import isotropic_dilation
 from skimage.morphology import binary_erosion
 from skimage.morphology import binary_dilation
 
-from valleyfloor.floor.connect import connected
+from slopes.floor.connect import connected
 
 def filter_nan_gaussian_conserving(arr, sigma):
     """Apply a gaussian filter to an array with nans.

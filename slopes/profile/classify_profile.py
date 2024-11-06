@@ -4,7 +4,7 @@ import numpy as np
 from scipy import signal
 from tqdm import tqdm
 
-from slopes.utils import split_profile
+from slopes.profile.split import split_profile
 
 def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold: int,
                       distance: int, height: float) -> gpd.GeoDataFrame: 

@@ -14,7 +14,7 @@ import xarray as xr
 import skimage
 from whitebox import WhiteboxTools
 
-from slopes.utils import finite_unique
+from slopes.raster.raster_utils import finite_unique
 
 def label_hillslopes(flow_paths: xr.DataArray, flow_dir: xr.DataArray,
                      subbasins: xr.DataArray, 

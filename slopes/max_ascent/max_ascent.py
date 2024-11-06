@@ -10,7 +10,7 @@ from skimage.morphology import isotropic_dilation
 from slopes.terrain.flow_dir import flowdir_wbt
 from slopes.terrain.flow_dir import trace_flowpath
 from slopes.terrain.flow_dir import DIRMAPS
-from slopes.utils import finite_unique
+from slopes.raster.raster_utils import finite_unique
 
 def max_ascent_paths(flow_paths: xr.DataArray, dem: xr.DataArray, num_points: int, wbt: WhiteboxTools):
     """

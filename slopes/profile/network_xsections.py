@@ -5,8 +5,8 @@ import xarray as xr
 import pandas as pd
 import geopandas as gpd
 from shapely.geometry import LineString
-from valleyfloor.raster.vectorize import single_polygon_from_binary_raster
 
+from slopes.raster.vectorize import single_polygon_from_binary_raster
 from slopes.geometry.geom_utils import get_length_and_width
 from slopes.geometry.cross_section import get_points_on_linestring
 from slopes.geometry.cross_section import get_cross_section_points_from_points

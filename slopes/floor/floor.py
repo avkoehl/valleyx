@@ -7,7 +7,7 @@ from scipy.ndimage import binary_fill_holes
 
 from slopes.floor.foundation import foundation
 from slopes.floor.connect import connected
-from slopes.utils import finite_unique
+from slopes.raster.raster_utils import finite_unique
 
 def check_dataset(dataset):
     required = ['hand', 'slope', 'subbasin', 'hillslope', 'flow_path']

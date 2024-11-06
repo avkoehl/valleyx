@@ -15,10 +15,12 @@ import geopandas as gpd
 import numpy as np
 import rioxarray as rxr
 from whitebox import WhiteboxTools
-from valleyfloor.utils import make_dir
 import xarray as xr
 
-from slopes.utils import pixel_to_point, translate_to_wbt, finite_unique
+from slopes.utils import make_dir
+from slopes.utils import pixel_to_point, 
+from slopes.utils import translate_to_wbt
+from slopes.raster.raster_utils import finite_unique
 
 def label_subbasins(flow_dir: xr.DataArray, flow_acc: xr.DataArray, flow_paths:
               xr.DataArray, wbt: WhiteboxTools) -> xr.DataArray:
