@@ -12,7 +12,7 @@ import toml
 from slopes.terrain.subbasins import label_subbasins
 from slopes.terrain.hillslopes import label_hillslopes
 from slopes.profile.network_xsections import network_xsections
-from slopes.utils import observe_values
+from slopes.profile.network_xsections import observe_values
 from slopes.profile.preprocess_profile import preprocess_profiles
 from slopes.profile.classify_profile import classify_profiles
 from slopes.reach.reaches import delineate_reaches

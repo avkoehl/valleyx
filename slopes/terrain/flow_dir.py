@@ -9,7 +9,7 @@ from shapely.geometry import Point
 from whitebox import WhiteboxTools
 import xarray as xr
 
-from slopes.utils import pixel_to_point
+from slopes.raster.raster_utils import pixel_to_point
 
 DIRMAPS = {
         "esri": {

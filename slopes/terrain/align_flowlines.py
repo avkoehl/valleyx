@@ -19,6 +19,7 @@ import warnings
 import numpy as np
 import networkx as nx
 import geopandas as gpd
+import xarray as xr
 import rioxarray as rxr
 import shapely
 from shapely.geometry import Point

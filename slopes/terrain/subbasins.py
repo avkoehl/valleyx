@@ -18,8 +18,8 @@ from whitebox import WhiteboxTools
 import xarray as xr
 
 from slopes.utils import make_dir
-from slopes.utils import pixel_to_point, 
 from slopes.utils import translate_to_wbt
+from slopes.raster.raster_utils import pixel_to_point
 from slopes.raster.raster_utils import finite_unique
 
 def label_subbasins(flow_dir: xr.DataArray, flow_acc: xr.DataArray, flow_paths:

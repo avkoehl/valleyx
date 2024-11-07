@@ -7,9 +7,9 @@ from slopes.terrain.flow_dir import flowdir_wbt
 from slopes.terrain.flow_dir import trace_flowpath
 from slopes.terrain.flow_dir import DIRMAPS
 from slopes.max_ascent.max_ascent import invert_dem
-from slopes.utils import split_profile
-from slopes.utils import point_to_pixel
-from slopes.utils import pixel_to_point
+from slopes.profile.split import split_profile
+from slopes.raster.raster_utils import point_to_pixel
+from slopes.raster.raster_utils import pixel_to_point
 
 def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope, 
                                  num_cells, slope_threshold, wbt):
