@@ -74,9 +74,8 @@ def classify_profile_max_ascent(profile, fdir, dirmap, slope, num_cells, slope_t
     return profile
 
 def _find_wall_half_max_ascent(half_profile, fdir, dirmap, slope, num_cells, slope_threshold):
-    # add first and last point as bp
-    half_profile.loc[half_profile.index[0], 'bp'] = True # this is the stream
-    half_profile.loc[half_profile.index[-1], 'bp'] = True
+    half_profile.loc[half_profile.index[0], 'bp'] = False # this is the stream
+    half_profile.loc[half_profile.index[0+1], 'bp'] = True # this is the cell immediately next to the stream
 
     bps = half_profile.loc[half_profile['bp'], 'geom']
 
@@ -88,7 +87,8 @@ def _find_wall_half_max_ascent(half_profile, fdir, dirmap, slope, num_cells, slo
 def is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
     # get path
     row, col = point_to_pixel(fdir, point)
-    points, path = trace_flowpath(row, col, fdir, dirmap, num_cells)
+    points, path = trace_flowpath(row, col, fdir, dirmap, num_cells+1)
+    path = path[1:]
 
     if len(path) < num_cells:
         return False
