@@ -9,13 +9,14 @@ from loguru import logger
 import xarray as xr
 
 
-from slopes.__main__import setup_wbt
+from slopes.__main__ import setup_wbt
 from slopes.terrain.subbasins import label_subbasins
 from slopes.terrain.hillslopes import label_hillslopes
 from slopes.profile.network_xsections import network_xsections
 from slopes.profile.network_xsections import observe_values
 from slopes.profile.preprocess_profile import preprocess_profiles
 from slopes.profile.classify_profile import classify_profiles
+from slopes.profile.transition_zones import classify_transition_zone
 from slopes.geometry.centerline import polygon_centerline
 from slopes.geometry.width import polygon_widths
 from slopes.reach.reaches import delineate_reaches
@@ -35,7 +36,7 @@ flowlines.crs = dem.rio.crs
 
 conditioned, flow_dir, flow_acc = flow_accumulation_workflow(dem, wbt)
 aligned_flowlines, flowpaths = align_flowlines(flowlines, flow_acc, flow_dir, wbt)
-smoothed, slope, curvature = elev_derivatives(conditioned, wbt, sigma=.75)
+smoothed, slope, curvature = elev_derivatives(conditioned, wbt, sigma=2)
 hand = channel_relief(conditioned, flowpaths, wbt, method='d8')
 
 dataset = xr.Dataset()
@@ -62,18 +63,21 @@ smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
 #xsections = network_xsections(smoothed, line_spacing=5,
 #                              line_width=100, point_spacing=5,
 #                              subbasins=dataset['subbasin'])
-xsections = network_xsections(smoothed, line_spacing=5,
-                              line_width=100, point_spacing=5)
+xsections = network_xsections(smoothed, line_spacing=10,
+                              line_width=100, point_spacing=2)
 
 
 profiles = observe_values(xsections, dataset[['flow_path', 'hillslope', 'dem', 'hand', 'slope', 'curvature']])
 processed = preprocess_profiles(profiles, min_hand_jump=15, ratio=5, min_distance=5, min_peak_prominence=10)
+classified = classify_transition_zone(processed, 20, 1.5)
+
+
 classified = classify_profiles(processed, 12, distance=1, height=0.01)
 classified.loc[classified['bp']].to_file('bps.shp')
-classified_two = classify_profiles_max_ascent(processed, dataset['dem'], dataset['slope'], 6, 12, wbt)
+classified_two = classify_profiles_max_ascent(processed, dataset['dem'], dataset['slope'], 15, 12, wbt)
 wall_points = classified.loc[classified['wallpoint']]
 wall_points_two = classified_two.loc[classified_two['wallpoint']]
-wall_points_two.to_file('wp_max_ascent.shp')
+wall_points_two.to_file('wp_max_ascent6.shp')
 
 floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
 #floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
