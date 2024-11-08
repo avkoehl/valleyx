@@ -26,6 +26,8 @@ from slopes.terrain.flow_acc import flow_accumulation_workflow
 from slopes.terrain.align_flowlines import align_flowlines
 from slopes.terrain.surface import elev_derivatives
 from slopes.terrain.hand import channel_relief
+from slopes.max_ascent.max_ascent import invert_dem
+from slopes.terrain.flow_dir import flowdir_wbt
 
 logger.enable('slopes')
 
@@ -51,6 +53,9 @@ dataset['curvature'] = curvature
 
 dataset['subbasin'] = label_subbasins(dataset['flow_dir'], dataset['flow_acc'], dataset['flow_path'], wbt)
 dataset['hillslope'] = label_hillslopes(dataset['flow_path'], dataset['flow_dir'], dataset['subbasin'], wbt) 
+
+inverted_dem = invert_dem(dataset['conditioned_dem'])
+max_ascent_fdir = flowdir_wbt(inverted_dem, wbt)
 
 
 dataset, flowlines_reaches = delineate_reaches(dataset, aligned_flowlines, wbt, 200, 30, minsize=100, window=5)
@@ -78,7 +83,10 @@ classified_two = classify_profiles_max_ascent(processed, dataset['dem'], dataset
 wall_points = classified.loc[classified['wallpoint']]
 wall_points_two = classified_two.loc[classified_two['wallpoint']]
 wall_points_two.to_file('wp_max_ascent6.shp')
+wp2 = finalize_wallpoints(wall_points_two['geom'], max_ascent_fdir)
+wp2 = observe_values(wp2, dataset[['hand', 'slope', 'subbasin', 'hillslope', 'flow_path']])
+wp2['streamID'] = wp2['subbasin']
 
-floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
+floors = label_floors(wp2, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, percentile=0.80)
 #floors = label_floors(wall_points_two, dataset, hillslope_threshold=20, plains_threshold=4, buffer=1, min_points=15, quantile=0.90)
 floors.rio.to_raster('floors.tif')

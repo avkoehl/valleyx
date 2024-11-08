@@ -68,7 +68,7 @@ def classify_profile_slope_threshold(profile, slope_threshold):
 
 def _find_wall_half(half_profile, slope_threshold):
     """
-    returns wall point loc if any
+    returns first upstream neighbor of the candidate point
     """
     # add first and last point as bps
     half_profile.loc[half_profile.index[0], 'bp'] = True # this is the stream
