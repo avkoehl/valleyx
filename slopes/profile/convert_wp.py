@@ -20,7 +20,6 @@ def finalize_wallpoints(wall_points, max_ascent_fdir, dirmap=DIRMAPS['wbt']):
         direction = max_ascent_fdir[row, col].item()
         new_row = row + dirmap[direction][0]
         new_col = col + dirmap[direction][1]
-        hand_val = hand.data[new_row, new_col]
         point = pixel_to_point(max_ascent_fdir, new_row, new_col)
         results.append({
             'geometry': point,

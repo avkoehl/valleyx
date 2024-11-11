@@ -25,6 +25,7 @@ from slopes.terrain.hand import channel_relief
 from slopes.max_ascent.max_ascent import invert_dem
 from slopes.terrain.flow_dir import flowdir_wbt
 from slopes.profile.convert_wp import finalize_wallpoints
+from slopes.profile.transition_zones import classify_transition_zone
 
 
 def setup_wbt(working_dir, verbose=False):
@@ -88,7 +89,7 @@ def compute_profiles(
         flowlines, line_spacing, line_width, point_spacing, subbasins
     )
     profiles = observe_values(xsections, dataset)
-    processed = preprocess_profiles(profiles, min_hand_jump, ratio, min_distance)
+    processed = preprocess_profiles(profiles, min_hand_jump, ratio, min_distance, min_peak_prominence=20)
     return processed
 
 
@@ -105,13 +106,13 @@ def wall_points_curv(profiles, slope_threshold, distance, height):
     wall_points = classified.loc[classified["wallpoint"]]
     return wall_points
 
-def finalize_wp(wallpoints, dem, wbt, dataset)
+def finalize_wp(wallpoints, dem, wbt, dataset):
     inverted_dem = invert_dem(dem)
     fdir = flowdir_wbt(inverted_dem, wbt)
-    wp = finalize_wallpoints(wallpoints, dataset[['hand', 'slope', 'subbasin', 
-                                                  'hillslope', 'flow_path']])
-    wp['streamID'] = wb['subbasin']
-    return wbp
+    wp = finalize_wallpoints(wallpoints, fdir)
+    wp = observe_values(wp, dataset[['hand', 'slope', 'subbasin', 'hillslope', 'flow_path']])
+    wp['streamID'] = wp['subbasin']
+    return wp
 
 def main(
     wbt,
@@ -165,8 +166,8 @@ def main(
         profiles, slope_threshold, distance, height
     )
 
-    wp_tran = wp_transition_zone(
-            profiles, max_hand, min_ratio
+    wp_tran = classify_transition_zone(
+            profiles, max_hand=20, min_ratio=1.5
     )
 
     wp_ma = finalize_wp(wp_ma['geom'], dem, wbt, dataset)
@@ -202,7 +203,7 @@ def main(
         quantile,
     )
 
-    return floors_ma, floors_curv, floors_tran
+    return floors_ma, floors_curv, floors_tran, wp_ma, wp_curv, wp_tran
 
 
 if __name__ == "__main__":
@@ -218,7 +219,7 @@ if __name__ == "__main__":
     dem, flowlines = load_input(args.dem_file, args.flowlines_file)
 
     params = toml.load(args.param_file)
-    floors_ma, floors_curv, floors_tran = main(wbt, dem, flowlines, **params)
+    floors_ma, floors_curv, floors_tran,_,_,_ = main(wbt, dem, flowlines, **params)
 
     # make odir if doesn't exist
     os.makedirs(args.odir, exist_ok=True)
