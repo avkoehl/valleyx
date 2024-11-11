@@ -1,5 +1,5 @@
 # process topography params
-sigma = 3
+sigma = 1.5
 
 # reach segmentation params
 num_points = 200
@@ -18,16 +18,16 @@ ratio = 2.5
 min_distance = 50
 
 # profile curvature params
-distance = 3
-height = 0.02
+distance = 1
+height = 0.0
 
 # max ascent params
-num_cells = 5
+num_cells = 3
 
 # slope thresholds 
 plains_threshold = 4
 hillslope_threshold = 20
-slope_threshold = 12
+slope_threshold = 10
 
 # floor threhsolds
 buffer = 1
