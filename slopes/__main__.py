@@ -166,13 +166,14 @@ def main(
         profiles, slope_threshold, distance, height
     )
 
-    wp_tran = classify_transition_zone(
+    classified_tran = classify_transition_zone(
             profiles, max_hand=20, min_ratio=1.5
     )
+    wp_trans = classified_tran.loc[classified_tran["wallpoint"]]
 
     wp_ma = finalize_wp(wp_ma['geom'], dem, wbt, dataset)
     wp_curv = finalize_wp(wp_curv['geom'], dem, wbt, dataset)
-    wp_tran = finalize_wp(wp_tran['geom'], dem, wbt, dataset)
+    wp_tran = finalize_wp(wp_trans['geom'].dropna(), dem, wbt, dataset)
 
     floors_ma = label_floors(
         wp_ma,
