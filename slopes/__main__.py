@@ -166,14 +166,8 @@ def main(
         profiles, slope_threshold, distance, height
     )
 
-    classified_tran = classify_transition_zone(
-            profiles, max_hand=20, min_ratio=1.5
-    )
-    wp_trans = classified_tran.loc[classified_tran["wallpoint"]]
-
     wp_ma = finalize_wp(wp_ma['geom'], dem, wbt, dataset)
     wp_curv = finalize_wp(wp_curv['geom'], dem, wbt, dataset)
-    wp_tran = finalize_wp(wp_trans['geom'].dropna(), dem, wbt, dataset)
 
     floors_ma = label_floors(
         wp_ma,
@@ -194,17 +188,7 @@ def main(
         quantile,
     )
 
-    floors_tran = label_floors(
-        wp_tran,
-        dataset,
-        hillslope_threshold,
-        plains_threshold,
-        buffer,
-        min_points,
-        quantile,
-    )
-
-    return floors_ma, floors_curv, floors_tran, wp_ma, wp_curv, wp_tran
+    return floors_ma, floors_curv
 
 
 if __name__ == "__main__":
@@ -220,7 +204,7 @@ if __name__ == "__main__":
     dem, flowlines = load_input(args.dem_file, args.flowlines_file)
 
     params = toml.load(args.param_file)
-    floors_ma, floors_curv, floors_tran,_,_,_ = main(wbt, dem, flowlines, **params)
+    floors, flowlines, wallpoints, dataset = extract_valleys(wbt, dem, flowlines, **params, return_flowlines=True, return_wallpoints=True, return_rasters=True)
 
     # make odir if doesn't exist
     os.makedirs(args.odir, exist_ok=True)
@@ -228,4 +212,3 @@ if __name__ == "__main__":
     #  save floors_ma and floors_curv to odir
     floors_ma.rio.to_raster(os.path.join(args.odir, "floors_ma.tif"))
     floors_curv.rio.to_raster(os.path.join(args.odir, "floors_curv.tif"))
-    floors_tran.rio.to_raster(os.path.join(args.odir, "floors_tran.tif"))

@@ -29,12 +29,18 @@ from slopes.terrain.hand import channel_relief
 from slopes.max_ascent.max_ascent import invert_dem
 from slopes.terrain.flow_dir import flowdir_wbt
 
+from slopes.flow_analysis import flow_analysis
+from slopes.delineate_reaches import delineate_reaches
+
 logger.enable('slopes')
 
 wbt = setup_wbt("./working_dir")
 dem = rxr.open_rasterio("./data/input/dem.tif", masked=True).squeeze()
 flowlines = gpd.read_file("./data/input/flowlines.shp")
 flowlines.crs = dem.rio.crs
+
+al, ds = flow_analysis(dem, flowlines, wbt)
+al_r, ds_r = delineate_reaches(ds, al, wbt, 10, 20, 50, 3)
 
 conditioned, flow_dir, flow_acc = flow_accumulation_workflow(dem, wbt)
 aligned_flowlines, flowpaths = align_flowlines(flowlines, flow_acc, flow_dir, wbt)
