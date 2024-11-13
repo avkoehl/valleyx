@@ -1552,6 +1552,25 @@ files = [
 ]
 
 [[package]]
+name = "loguru"
+version = "0.7.2"
+description = "Python logging made (stupidly) simple"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "loguru-0.7.2-py3-none-any.whl", hash = "sha256:003d71e3d3ed35f0f8984898359d65b79e5b21943f78af86aa5491210429b8eb"},
+    {file = "loguru-0.7.2.tar.gz", hash = "sha256:e671a53522515f34fd406340ee968cb9ecafbc4b36c679da03c18fd8d0bd51ac"},
+]
+
+[package.dependencies]
+colorama = {version = ">=0.3.4", markers = "sys_platform == \"win32\""}
+win32-setctime = {version = ">=1.0.0", markers = "sys_platform == \"win32\""}
+
+[package.extras]
+dev = ["Sphinx (==7.2.5)", "colorama (==0.4.5)", "colorama (==0.4.6)", "exceptiongroup (==1.1.3)", "freezegun (==1.1.0)", "freezegun (==1.2.2)", "mypy (==v0.910)", "mypy (==v0.971)", "mypy (==v1.4.1)", "mypy (==v1.5.1)", "pre-commit (==3.4.0)", "pytest (==6.1.2)", "pytest (==7.4.0)", "pytest-cov (==2.12.1)", "pytest-cov (==4.1.0)", "pytest-mypy-plugins (==1.9.3)", "pytest-mypy-plugins (==3.0.0)", "sphinx-autobuild (==2021.3.14)", "sphinx-rtd-theme (==1.3.0)", "tox (==3.27.1)", "tox (==4.11.0)"]
+
+[[package]]
 name = "looseversion"
 version = "1.3.0"
 description = "Version numbering for anarchists and software realists"
@@ -3003,6 +3022,59 @@ files = [
 ]
 
 [[package]]
+name = "ruptures"
+version = "1.1.9"
+description = "Change point detection for signals in Python."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "ruptures-1.1.9-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:8ab2569b94f6e6fb397379c4085516817ac51101970f4392d5f9f383ba45b02f"},
+    {file = "ruptures-1.1.9-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aebd937375305d5247e3559158dbb1249f358540a11903a174a68fd2ce7ffeb9"},
+    {file = "ruptures-1.1.9-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b8071bd94c3acb09de3ddc09f88e002442e233a9431f1964d7949cf06c4fb315"},
+    {file = "ruptures-1.1.9-cp310-cp310-win_amd64.whl", hash = "sha256:06da516a38ac9ab0525f0c3791feaf1fb2c4704d85df6197578f8e1b8b808113"},
+    {file = "ruptures-1.1.9-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:ec33c2e42156b4de8fa52f2b1194c94d9b36b5e68b49984b2103c40c24606267"},
+    {file = "ruptures-1.1.9-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4aaf893069368957a29883c209f57a782278cc6a85a2e1fb6193477a45ae115c"},
+    {file = "ruptures-1.1.9-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2f8899fc23c762245b3b2bf532ee366d285c98c3ffc4a66746a4daf524997cd0"},
+    {file = "ruptures-1.1.9-cp311-cp311-win_amd64.whl", hash = "sha256:4759f0b3decd8ee3c2bc5104247aedb9c06d51a2055e40961d5389dbeb7b9075"},
+    {file = "ruptures-1.1.9-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:28d242c961a2b486e36b25a4df3f26fabee0607ae8c80b2e65e73a9db491ce76"},
+    {file = "ruptures-1.1.9-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9df414e3952e1d6b26dc02515d28b9adfc821ef2c6459c196a3ae751dd7d1813"},
+    {file = "ruptures-1.1.9-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8466857f4d5c957b050bead1bb0e7d5f2807c60c5bdc30fc533f36ae0234583f"},
+    {file = "ruptures-1.1.9-cp312-cp312-win_amd64.whl", hash = "sha256:92adde29b24b3ad94d8cd9421634a5f8dd729ae74d3b88bdca4bbc5cfd450c11"},
+    {file = "ruptures-1.1.9-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:e93ddfd7a5c7930fb2a0b3e9af63f5b802c084117ceb00e8c3e1c3084128277b"},
+    {file = "ruptures-1.1.9-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1b04359d3b74d33175ee76218572ac8d6947aa76bd5db9646aa5feb4b9c6b81a"},
+    {file = "ruptures-1.1.9-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:439f200518ac5e67974cd82348eaa9a4bdb8d460019765d16619bf4aed6612ee"},
+    {file = "ruptures-1.1.9-cp36-cp36m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a7c2d8d7d60a5063d28a3faea0fef2e988e3e24774974da8827fa6a3b43d7e8a"},
+    {file = "ruptures-1.1.9-cp36-cp36m-win32.whl", hash = "sha256:b3b036e9a34734db789ca2490119319845d4fa7fa127b2e824313a074c58b5b9"},
+    {file = "ruptures-1.1.9-cp36-cp36m-win_amd64.whl", hash = "sha256:8ca334bdb810acee3c7adab1b8dc99d40f7d9e75b2f972adce9e69fddeef4e0e"},
+    {file = "ruptures-1.1.9-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:1d2bf983c70f680beafced8b279dcc15eabf706f4e0efa32d87a3d42c3e9c30e"},
+    {file = "ruptures-1.1.9-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:73f728f4b2de60483347464b811287b3a8cc44f5bcd905c32dd2b5e5e23c68a3"},
+    {file = "ruptures-1.1.9-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6978aa528b36c9a683b061231539393b392f5f3ab52b511f2f3912a37d74667d"},
+    {file = "ruptures-1.1.9-cp37-cp37m-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:4547e7611c97eb818c6dc8054c25ed84fb5060951541d3ef8602575b43487e87"},
+    {file = "ruptures-1.1.9-cp37-cp37m-win32.whl", hash = "sha256:3934bffd4f424de3a6ef73931fe9f4d84ff905f8ceef12c5f87b94006d90cc78"},
+    {file = "ruptures-1.1.9-cp37-cp37m-win_amd64.whl", hash = "sha256:31c8699b6fd7ec20ea31bf2a1a5dbeb52a79cad4f51615694f6cf5b443fc8af2"},
+    {file = "ruptures-1.1.9-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:14e2bf1d3453c67a7b11dcc7a34c20beebcd60401af35f18de8a4cad3fde30d7"},
+    {file = "ruptures-1.1.9-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:981fc93f7093b4d7522e148be61635eae39ab46b2e20afb6b736d1235c38b053"},
+    {file = "ruptures-1.1.9-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:732a9a06d46f52a9ce76c8fa1a799718f019d7431cd018ea54fe6b39ac13e3b3"},
+    {file = "ruptures-1.1.9-cp38-cp38-win_amd64.whl", hash = "sha256:49d42f06a755664f660ab326a887ecd1ec8fe4d3bdf78c1e233fb43029c8ee32"},
+    {file = "ruptures-1.1.9-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:829e7623364287c87607f01b62c799396bbdd3c4c2d0c9757e6252960fa51de2"},
+    {file = "ruptures-1.1.9-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8cf9597804d1cd227f16021b24e0619c0747247b9de268e436ec8c317a846aca"},
+    {file = "ruptures-1.1.9-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:03fd112accfff518ab191ebac78d2d3cf2eca341a41363bfd95f3db907a6a7b1"},
+    {file = "ruptures-1.1.9-cp39-cp39-win_amd64.whl", hash = "sha256:55d7f20088153ebc2d4d2528dc3b6f7bdcdc8638153e84bfe1393e89001535ce"},
+    {file = "ruptures-1.1.9.tar.gz", hash = "sha256:aa940f3c02235dab94753ff15689f8ebaca10c83da71cb29cbb7f981dfa362dc"},
+]
+
+[package.dependencies]
+numpy = "*"
+scipy = "*"
+
+[package.extras]
+dev = ["pre-commit"]
+display = ["matplotlib"]
+docs = ["jupyter", "librosa", "matplotlib", "mkdocs", "mkdocs-macros-plugin", "mkdocs-material", "mkdocs-section-index", "mkdocstrings[python] (>=0.18)", "mknotebooks", "nltk", "pymdown-extensions"]
+test = ["pytest", "pytest-cov"]
+
+[[package]]
 name = "scikit-image"
 version = "0.24.0"
 description = "Image processing in Python"
@@ -3467,6 +3539,18 @@ doc = ["sphinx", "sphinx_rtd_theme"]
 test = ["pytest", "ruff"]
 
 [[package]]
+name = "toml"
+version = "0.10.2"
+description = "Python Library for Tom's Obvious, Minimal Language"
+category = "main"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+files = [
+    {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},
+    {file = "toml-0.10.2.tar.gz", hash = "sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f"},
+]
+
+[[package]]
 name = "tomli"
 version = "2.1.0"
 description = "A lil' TOML parser"
@@ -3660,6 +3744,36 @@ optional = ["python-socks", "wsaccel"]
 test = ["websockets"]
 
 [[package]]
+name = "whitebox"
+version = "2.3.5"
+description = "An advanced geospatial data analysis platform"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "whitebox-2.3.5-py2.py3-none-any.whl", hash = "sha256:dd9db85bbb687356741afe935dd25286a2b31e7bf87b74c60b655cdf84a9d922"},
+    {file = "whitebox-2.3.5.tar.gz", hash = "sha256:4a9fb6da799dc0f99daf139d6dbe573ca12af3785c48708e56728b8372c6a2a7"},
+]
+
+[package.dependencies]
+Click = ">=6.0"
+
+[[package]]
+name = "win32-setctime"
+version = "1.1.0"
+description = "A small Python utility to set file creation time on Windows"
+category = "main"
+optional = false
+python-versions = ">=3.5"
+files = [
+    {file = "win32_setctime-1.1.0-py3-none-any.whl", hash = "sha256:231db239e959c2fe7eb1d7dc129f11172354f98361c4fa2d6d2d7e278baa8aad"},
+    {file = "win32_setctime-1.1.0.tar.gz", hash = "sha256:15cf5750465118d6929ae4de4eb46e8edae9a5634350c01ba582df868e932cb2"},
+]
+
+[package.extras]
+dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
+
+[[package]]
 name = "xarray"
 version = "2024.10.0"
 description = "N-D labeled arrays and datasets in Python"
@@ -3688,4 +3802,4 @@ viz = ["cartopy", "matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<4.0"
-content-hash = "761152500cff5a98d824d8555bed2ecbba254cd8a5e93ba8ddf649812ff6f087"
+content-hash = "3e807383dbe9f70e6b6bce642f79be5158562968a7f16305c4d44284b2305c2b"

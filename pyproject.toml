@@ -21,6 +21,10 @@ rdp = "^0.8"
 pysheds = "^0.4"
 tqdm = "^4.66.5"
 numba = "^0.60.0"
+loguru = "^0.7.2"
+whitebox = "^2.3.5"
+ruptures = "^1.1.9"
+toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 ipython = "^8.29.0"
