@@ -10,16 +10,17 @@ from slopes.raster.raster_utils import finite_unique
 
 logger.bind(module="flow_analysis")
 
+
 def flow_analysis(dem, flowlines, wbt):
     """
     Perform comprehensive flow analysis on a DEM using provided flowlines.
-    
+
     This function executes a hydrological analysis workflow:
     1. DEM conditioning and flow routing
     2. Flowline alignment with flow accumulation
     3. Subbasin delineation
     4. Height Above Nearest Drainage (HAND) calculation
-    
+
     Parameters
     ----------
     dem : xarray.DataArray
@@ -28,7 +29,7 @@ def flow_analysis(dem, flowlines, wbt):
         Vector stream network to be aligned with flow accumulation
     wbt : WhiteboxTools
         Initialized WhiteboxTools object for running hydrological analyses
-    
+
     Returns
     -------
     tuple
@@ -43,7 +44,7 @@ def flow_analysis(dem, flowlines, wbt):
             * flow_path: Rasterized stream network
             * subbasin: Labeled subbasin grid
             * hand: Height Above Nearest Drainage
-    
+
     Examples
     --------
     >>> import whitebox
@@ -57,16 +58,16 @@ def flow_analysis(dem, flowlines, wbt):
     aligned_flowlines, flow_path = align_flowlines(flowlines, flow_acc, flow_dir, wbt)
     subbasin = label_subbasins(flow_dir, flow_acc, flow_path, wbt)
     hillslope = wbt_label_drainage_sides(flow_dir, flow_path, wbt)
-    hand = channel_relief(conditioned, flow_path, wbt, method='d8')
+    hand = channel_relief(conditioned, flow_path, wbt, method="d8")
 
     dataset = xr.Dataset()
-    dataset['conditioned_dem'] = conditioned
-    dataset['flow_dir'] = flow_dir
-    dataset['flow_acc'] = flow_acc
-    dataset['flow_path'] = flow_path
-    dataset['subbasin'] = subbasin
-    dataset['hillslope'] = hillslope
-    dataset['hand'] = hand
+    dataset["conditioned_dem"] = conditioned
+    dataset["flow_dir"] = flow_dir
+    dataset["flow_acc"] = flow_acc
+    dataset["flow_path"] = flow_path
+    dataset["subbasin"] = subbasin
+    dataset["hillslope"] = hillslope
+    dataset["hand"] = hand
 
     logger.debug(f"Number of flowlines: {len(flowlines)}")
     logger.debug(f"Number of flowlines after alignment: {len(aligned_flowlines)}")
