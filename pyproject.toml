@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "slopes"
+name = "valleyx"
 version = "0.1.0"
 description = ""
 authors = ["Arthur Koehl <avkoehl@ucdavis.edu>"]
