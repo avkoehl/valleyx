@@ -29,8 +29,10 @@ from slopes.terrain.hand import channel_relief
 from slopes.max_ascent.max_ascent import invert_dem
 from slopes.terrain.flow_dir import flowdir_wbt
 
+from slopes.utils import setup_wbt
 from slopes.flow_analysis import flow_analysis
-from slopes.delineate_reaches import delineate_reaches
+from slopes.reach_delineation import delineate_reaches
+from slopes.wall_detection import detect_wallpoints
 
 logger.enable('slopes')
 
@@ -41,6 +43,7 @@ flowlines.crs = dem.rio.crs
 
 al, ds = flow_analysis(dem, flowlines, wbt)
 al_r, ds_r = delineate_reaches(ds, al, wbt, 10, 20, 50, 3)
+wp = detect_wallpoints(ds_r, al_r, 1, 10, 100, 3, 20, 5, 10, 4, 5, 10, wbt)
 
 conditioned, flow_dir, flow_acc = flow_accumulation_workflow(dem, wbt)
 aligned_flowlines, flowpaths = align_flowlines(flowlines, flow_acc, flow_dir, wbt)

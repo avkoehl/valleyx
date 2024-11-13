@@ -39,13 +39,13 @@ def preprocess_profiles(
         - alpha : numeric, straight-line distance from center point
         - flow_path : numeric, streamID if point is stream, else np.nan
         - hillslope : numeric, hillslope identifier
-        - dem : numeric, elevation values
+        - conditioned_dem : numeric, elevation values
         - hand : numeric, height above nearest drainage
     min_hand_jump : float 
         Minimum height above drainage change to consider as potential valley crossing,
     ratio : float 
         Threshold ratio of HAND change to elevation change for detecting ridges,
-    min_peak_prominance: float
+    min_peak_prominence: float
         Prominence of peaks for scipy peak detection on elevation profile
     min_distance : float
         Minimum required distance from stream center in meters
@@ -62,7 +62,7 @@ def preprocess_profiles(
         If any required columns are missing from input DataFrame
     """
     # Validate required columns
-    req = ["streamID", "xsID", "alpha", "flow_path", "hillslope", "dem", "hand"]
+    req = ["streamID", "xsID", "alpha", "flow_path", "hillslope", "conditioned_dem", "hand"]
     missing = [col for col in req if col not in xsections.columns]
     if missing:
         raise ValueError(f"Missing required columns: {', '.join(missing)}")
@@ -73,7 +73,7 @@ def preprocess_profiles(
         # Apply preprocessing steps
         profile = _remove_duplicates(profile)
         profile = _recenter_on_stream(profile)
-        profile = profile[~np.isnan(profile['dem'])]
+        profile = profile[~np.isnan(profile['conditioned_dem'])]
         
         # Skip profiles that don't extend far enough from stream
         if profile['alpha'].min() > -min_distance or profile['alpha'].max() < min_distance:
@@ -120,7 +120,7 @@ def _filter_by_peaks(profile: gpd.GeoDataFrame, min_prominence: float) -> gpd.Ge
     """
     def find_first_peak(profile, min_prominence):
         # Find peaks that meet prominence threshold
-        peaks, properties = signal.find_peaks(profile['dem'], prominence=min_prominence)
+        peaks, properties = signal.find_peaks(profile['conditioned_dem'], prominence=min_prominence)
         
         if len(peaks) > 0:
             first_peak = peaks[0]
@@ -253,8 +253,8 @@ def _filter_ridge_crossing(
     pos, neg = split_profile(profile)
     
     # Filter each side independently
-    pos = pos.loc[_filter_ratio(pos['hand'], pos['dem'], ratio, min_hand_jump)]
-    neg = neg.loc[_filter_ratio(neg['hand'], neg['dem'], ratio, min_hand_jump)]
+    pos = pos.loc[_filter_ratio(pos['hand'], pos['conditioned_dem'], ratio, min_hand_jump)]
+    neg = neg.loc[_filter_ratio(neg['hand'], neg['conditioned_dem'], ratio, min_hand_jump)]
     
     return combine_profile(pos, neg)
 

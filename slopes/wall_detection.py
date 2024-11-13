@@ -1,46 +1,62 @@
-# smooth flowlines
-# compute xsection points
-# observe values
-# preprocess profiles
-# mark candidate points
-# detect wall points
-# return df
+from loguru import logger
+from shapelysmooth import chaikin_smooth
+from shapelysmooth import taubin_smooth
 
-# preprocessing layers needed:
-# geom
-# streamID
-# pointID
-# xsID
-# alpha
-# flow_path
-# hillslope
-# dem
-# hand
-# params needed:
-#   min_hand_jump
-#   ratio
-#   min_peak_prominance
-#   min_distance
+from slopes.terrain.surface import elev_derivatives
+from slopes.profile.network_xsections import network_xsections
+from slopes.profile.network_xsections import observe_values
+from slopes.profile.preprocess_profile import preprocess_profiles
+from slopes.profile.convert_wp import finalize_wallpoints
+from slopes.max_ascent.classify_profile_max_ascent import classify_profiles_max_ascent
+from slopes.max_ascent.max_ascent import invert_dem
+from slopes.terrain.flow_dir import flowdir_wbt
 
-# for method = max-ascent
-# layers needed:
-#   curvature
-#   slope
-# params needed:
-#  num_cells
-#  slope_threshold
+logger.bind(module="wall_detection")
 
-# for method = segment_slope
-# layers needed: 
-#   curvature
-#   slope
-# params needed:
-#  slope_threshold
-#  distance
-#  height
+def detect_wallpoints(dataset, flowlines, sigma, line_spacing, line_width, point_spacing, min_hand_jump, ratio, min_peak_prominence, min_distance, num_cells, slope_threshold, wbt):
+    logger.info("Starting wall point detection")
+
+    req = ['subbasin', 'conditioned_dem', 'flow_path', 'hillslope', 'hand'] 
+    missing = [col for col in req if col not in dataset.data_vars]
+    if missing:
+        raise ValueError(f"Missing required layers: {', '.join(missing)}")
+
+    logger.debug("Computing elevation derivatives")
+    dataset['smoothed'], dataset['slope'], dataset['curvature'] = elev_derivatives(dataset['conditioned_dem'], wbt, sigma) 
 
 
-# INPUT:
-#   dataset
-#   method?
-#   params
+    logger.debug(f"Flowlines count: {len(flowlines)}")
+    logger.debug("Smoothing flowlines")
+    flowlines = smooth_flowlines(flowlines)
+
+    logger.debug(f"Creating xsections, line interval: {line_spacing}, pt interval: {point_spacing}")
+    xsections = network_xsections(flowlines, line_spacing, line_width, point_spacing, dataset['subbasin'])
+    logger.debug(f"Number of xsections: {len(xsections['xsID'].unique())}, number of points: {len(xsections)}")
+    logger.debug(f"Observing values at cross section points, {dataset.data_vars}")
+    xsections = observe_values(xsections, dataset)
+    xsections = preprocess_profiles(xsections, min_hand_jump, ratio, min_distance, min_peak_prominence)
+    logger.debug(f"Number of xsections after preprocessing: {len(xsections['xsID'].unique())}, number of points {len(xsections)}")
+
+    logger.debug(f"Finding wall points, num_cells: {num_cells}, slope: {slope_threshold}")
+    xsections = classify_profiles_max_ascent(xsections, dataset['conditioned_dem'], dataset['slope'], num_cells, slope_threshold, wbt)
+    wallpoints = xsections.loc[xsections['wallpoint'], 'geom']
+
+    logger.debug(f"Number of wall points: {len(wallpoints)}")
+    logger.debug("Finding upslope neighbor for each wall point")
+    wallpoints = finalize_wp(wallpoints, dataset['conditioned_dem'], wbt, dataset)
+
+    logger.success("Completed wall point detection")
+    return wallpoints
+
+def smooth_flowlines(flowlines, flowline_smooth_tolerance=3):
+    smoothed = flowlines.apply(lambda x: x.simplify(flowline_smooth_tolerance))
+    smoothed = smoothed.apply(lambda x: chaikin_smooth(taubin_smooth(x)))
+    return smoothed
+
+def finalize_wp(wallpoints, dem, wbt, dataset):
+    inverted_dem = invert_dem(dem)
+    fdir = flowdir_wbt(inverted_dem, wbt)
+    wp = finalize_wallpoints(wallpoints, fdir)
+    wp = observe_values(wp, dataset[['hand', 'slope', 'subbasin', 'hillslope', 'flow_path']])
+    wp['streamID'] = wp['subbasin']
+    return wp
