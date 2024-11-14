@@ -2,6 +2,7 @@ import argparse
 import os
 import toml
 import shutil
+from loguru import logger
 
 from valleyx.core import extract_valleys
 from valleyx.core import ValleyConfig
@@ -11,7 +12,7 @@ from valleyx.utils import load_input
 
 def setup_logging(enable_logging, log_file):
     if enable_logging:
-        logger.enable("valleyfloor")
+        logger.enable("valleyx")
         if log_file:
             logger.remove()
             logger.add(log_file, level="DEBUG")
