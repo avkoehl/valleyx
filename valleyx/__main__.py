@@ -28,9 +28,12 @@ if __name__ == "__main__":
     parser.add_argument("--param_file", type=str, required=True)
     parser.add_argument("--floor_ofile", type=str, required=True)
     parser.add_argument("--flowlines_ofile", type=str, default=None)
+    parser.add_argument("--wp_ofile", type=str, default=None)
     parser.add_argument("--enable_logging", action='store_true') # false if not set
     parser.add_argument("--log_file", type=str, default=None)
     args = parser.parse_args()
+
+    setup_logging(args.enable_logging, args.log_file)
 
     wbt = setup_wbt(args.working_dir)
     dem, flowlines = load_input(args.dem_file, args.flowlines_file)
@@ -40,24 +43,19 @@ if __name__ == "__main__":
 
     make_dir(args.working_dir, remove_existing=True)
 
+    results = extract_valleys(
+            dem,
+            flowlines,
+            wbt,
+            config
+    )
+
+    results['floor'].rio.to_raster(args.floor_ofile)
+
     if args.flowlines_ofile:
-        floor, flowlines = extract_valleys(
-            dem,
-            flowlines,
-            wbt,
-            config,
-            return_flowlines=True
-        )
-        floor.rio.to_raster(args.floor_ofile)
-        flowlines.to_file(args.flowlines_ofile)
-    else:
-        floor = extract_valleys(
-            dem,
-            flowlines,
-            wbt,
-            config,
-            return_flowlines=False
-        )
-        floor.rio.to_raster(args.floor_ofile)
+        results['flowlines'].to_file(args.flowlines_ofile)
+
+    if args.wp_ofile:
+        results['wallpoints'].to_file(args.wp_ofile)
 
     shutil.rmtree(args.working_dir)

@@ -48,7 +48,7 @@ class ValleyConfig:
         return cls(**config_dict)
 
 
-def extract_valleys(dem, flowlines, wbt, config, return_flowlines=True):
+def extract_valleys(dem, flowlines, wbt, config):
     logger.info("Running extract valleys workflow")
     flowlines, dataset = flow_analysis(dem, flowlines, wbt)
     flowlines, dataset = delineate_reaches(
@@ -87,7 +87,8 @@ def extract_valleys(dem, flowlines, wbt, config, return_flowlines=True):
     floor = subbasin_floors(floor, dataset["subbasin"])
     logger.success("Finished extract valleys workflow")
 
-    if return_flowlines:
-        return floor, flowlines
-    else:
-        return floor
+    return {
+            'floor': floor,
+            'flowlines': flowlines,
+            'wallpoints': wallpoints
+            }
