@@ -46,6 +46,10 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
             voronoi_graph = interior_voronoi(simple)
             bn = boundary_nodes(voronoi_graph)
 
+            # set max num_points
+            if num_points > 10000:
+                break
+
             if source is not None:
                 bn['distance_to_source'] = bn.distance(source)
                 if (bn['distance_to_source'] < dist_tolerance).sum() == 0:
