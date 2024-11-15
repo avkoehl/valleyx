@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from loguru import logger
+from typing import Optional
 
 from valleyx.flow_analysis import flow_analysis
 from valleyx.reach_delineation import delineate_reaches
@@ -37,8 +38,8 @@ class ValleyConfig:
     slope_threshold: float
 
     # Floor labeling params
-    hillslope_threshold: float
-    plains_threshold: float
+    max_floor_slope: Optional[float] = None 
+    foundation_slope: float
     buffer: float
     min_points: int
     percentile: float

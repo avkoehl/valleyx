@@ -19,8 +19,8 @@ def check_dataset(dataset):
 def label_floors(
     wall_points,
     dataset,
-    hillslope_threshold,
-    plains_threshold,
+    max_floor_slope,
+    foundation_threshold,
     buffer,
     min_points,
     percentile,
@@ -31,9 +31,9 @@ def label_floors(
     floors = dataset["subbasin"].copy()
     floors.data = np.full(floors.shape, False, dtype=bool)
 
-    logger.debug(f"Detecting baseline floor with slope threshold: {plains_threshold}")
+    logger.debug(f"Detecting baseline floor with slope threshold: {foundation_threshold}")
     foundation_floor = foundation(
-        dataset["slope"], dataset["flow_path"], plains_threshold
+        dataset["slope"], dataset["flow_path"], foundation_threshold
     )
 
     for i, streamID in enumerate(finite_unique(dataset["subbasin"])):
@@ -51,7 +51,7 @@ def label_floors(
                 clipped_data["slope"],
                 clipped_data["hillslope"],
                 clipped_data["hand"],
-                hillslope_threshold,
+                max_floor_slope,
                 min_points,
                 buffer,
                 percentile,
@@ -82,7 +82,7 @@ def subbasin_floor(
     slope,
     hillslopes,
     hand,
-    hillslope_threshold,
+    max_floor_slope,
     min_points,
     buffer,
     percentile,
@@ -113,7 +113,7 @@ def subbasin_floor(
             hand_threshold = np.quantile(points["hand"], percentile)
             hand_threshold += buffer
             hs_floor = hand_threshold_floor(
-                h_hand, h_slope, hand_threshold, hillslope_threshold
+                h_hand, h_slope, hand_threshold, max_floor_slope
             )
             # print('\t\t hand threshold:', hand_threshold,  hs_floor.sum().item())
             hs_floor_masks.append(hs_floor)
@@ -135,10 +135,12 @@ def subbasin_floor(
 
 def hand_threshold_floor(hand, slope, hand_threshold, slope_threshold):
     hand_condition = hand <= hand_threshold
-    slope_condition = slope <= slope_threshold
-    combined = hand_condition & slope_condition
-    return combined
-
+    if slope_threshold is None:
+        return hand_condition
+    else:
+        slope_condition = slope <= slope_threshold
+        combined = hand_condition & slope_condition
+        return combined
 
 def subbasin_floors(floor, subbasins):
     result = floor.copy()
