@@ -79,8 +79,8 @@ def extract_valleys(dem, flowlines, wbt, config):
     floor = label_floors(
         wallpoints,
         dataset,
-        config.hillslope_threshold,
-        config.plains_threshold,
+        config.max_floor_slope,
+        config.foundation_slope,
         config.buffer,
         config.min_points,
         config.percentile,
