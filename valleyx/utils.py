@@ -20,10 +20,11 @@ def make_dir(path, remove_existing=True):
     os.makedirs(path)
 
 
-def setup_wbt(working_dir, verbose=False):
+def setup_wbt(working_dir, verbose=False, max_procs=1):
     wbt = whitebox.WhiteboxTools()
     wbt.set_working_dir(os.path.abspath(os.path.expanduser(working_dir)))
     wbt.verbose = verbose
+    wbt.set_max_procs(max_procs)
     return wbt
 
 
