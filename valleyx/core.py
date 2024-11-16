@@ -38,11 +38,11 @@ class ValleyConfig:
     slope_threshold: float
 
     # Floor labeling params
-    max_floor_slope: Optional[float] = None 
     foundation_slope: float
     buffer: float
     min_points: int
     percentile: float
+    max_floor_slope: Optional[float] = None 
 
     @classmethod
     def from_dict(cls, config_dict: dict):
