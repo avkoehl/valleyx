@@ -77,7 +77,7 @@ def delineate_reaches(
         dataset["flow_acc"],
         dataset["flow_dir"],
         wbt,
-        400,
+        1000,
         spacing,
         minsize,
         window,
