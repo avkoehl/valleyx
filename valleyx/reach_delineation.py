@@ -77,7 +77,7 @@ def delineate_reaches(
         dataset["flow_acc"],
         dataset["flow_dir"],
         wbt,
-        200,
+        400,
         spacing,
         minsize,
         window,
@@ -192,7 +192,7 @@ def _compute_reaches(
         points_df = gpd.GeoDataFrame(points, columns=["geometry"], crs=flowlines.crs)
         points_df["segment_id"] = ID
         all_points = pd.concat([all_points, points_df], ignore_index=True)
-        num_reaches = len(points_df["segment_id"].unique())
+        num_reaches = len(points_df)
         logger.debug(f"split {ID} into {num_reaches} reaches")
     return all_flowpath_cells, all_points, all_points_snapped
 
