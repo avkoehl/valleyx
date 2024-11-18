@@ -6,7 +6,6 @@ from valleyx.flow_analysis import flow_analysis
 from valleyx.reach_delineation import delineate_reaches
 from valleyx.wall_detection import detect_wallpoints
 from valleyx.label_floors import label_floors
-from valleyx.label_floors import subbasin_floors
 
 logger.bind(module="core")
 
@@ -85,7 +84,6 @@ def extract_valleys(dem, flowlines, wbt, config):
         config.min_points,
         config.percentile,
     )
-    floor = subbasin_floors(floor, dataset["subbasin"])
     logger.success("Finished extract valleys workflow")
 
     return {
