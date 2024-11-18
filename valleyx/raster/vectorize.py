@@ -55,7 +55,7 @@ def shapes_from_binary_raster(raster):
         
     unique_values = finite_unique(raster)
     
-    if (len(unique_values) != 2) or (0 not in unique_values) or (1 not in unique_values):
+    if not np.all((raster.data == 0) | (raster.data == 1)):
         raise ValueError("Array contains values other than 0 and 1") 
         
     raster = raster.astype(np.uint8)

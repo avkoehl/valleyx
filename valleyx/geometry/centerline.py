@@ -47,7 +47,7 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
             bn = boundary_nodes(voronoi_graph)
 
             # set max num_points
-            if num_points > 10000:
+            if num_points > 11999:
                 break
 
             if source is not None:
@@ -83,7 +83,8 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
     # edge case
     if source is not None and target is not None:
         if set(sources['node_id']).intersection(set(targets['node_id'])):
-            raise ValueError("the source points and target points have overlap; they must be close to the same boundary segments")
+            #raise ValueError("the source points and target points have overlap; they must be close to the same boundary segments")
+            return None
 
 
     path = find_best_path(voronoi_graph, sources, targets)

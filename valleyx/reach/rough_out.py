@@ -4,8 +4,8 @@ from scipy.ndimage import binary_fill_holes
 
 from valleyx.raster.vectorize import single_polygon_from_binary_raster
 
-def rough_out_hand(subbasins, hand, threshold):
-    stream_ids = np.unique(subbasins)
+def rough_out_hand(flowlines, subbasins, hand, threshold):
+    stream_ids = np.unique(flowlines.index)
     stream_ids = stream_ids[~np.isnan(stream_ids)]
 
     floors = []

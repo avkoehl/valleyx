@@ -41,6 +41,9 @@ def segment_reaches(valley_floor, centerline, flowline, spacing, window, minsize
         return None
 
     widths = polygon_widths(valley_floor, centerline, spacing=spacing)
+    if (len(widths) * spacing) < minsize:
+        return None
+
     widths = _series_to_segments(widths, centerline, window=window, minsize=minsize)
     bp_inds = _change_point_inds(widths)
 

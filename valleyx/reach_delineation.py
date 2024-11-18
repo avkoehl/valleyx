@@ -68,7 +68,7 @@ def delineate_reaches(
     dataset = dataset.copy()
     logger.info("Starting delineate reaches processing")
     logger.debug("Rough out valley floors")
-    vfs = rough_out_hand(dataset["subbasin"], dataset["hand"], hand_threshold)
+    vfs = rough_out_hand(flowlines, dataset["subbasin"], dataset["hand"], hand_threshold)
     logger.debug("Split segments into reaches")
     result = reach_subbasins(
         vfs,
@@ -77,7 +77,7 @@ def delineate_reaches(
         dataset["flow_acc"],
         dataset["flow_dir"],
         wbt,
-        1000,
+        1500,
         spacing,
         minsize,
         window,
@@ -164,11 +164,14 @@ def _compute_reaches(
             dist_tolerance=100,
             smooth_output=True,
         )
+        # something went wrong in computing the centerline, just default to the flowline
+        if centerline is None:
+            centerline = flowline
 
         flowpath_cells = _flowpath_cells(flowpath, flow_acc)
 
         points = segment_reaches(
-            valley_floor, centerline, flowline, spacing, minsize, window
+            valley_floor, centerline, flowline, spacing, window, minsize
         )
 
         if points is not None:
