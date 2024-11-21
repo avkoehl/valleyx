@@ -41,7 +41,7 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
     if dist_tolerance is not None:
         while True:
             points = create_points_along_boundary(polygon, num_points)
-            simple = Polygon(points)
+            simple = Polygon(points).buffer(0) # helps ensure valid
 
             voronoi_graph = interior_voronoi(simple)
             bn = boundary_nodes(voronoi_graph)
@@ -64,7 +64,7 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
             break
     else:
         points = create_points_along_boundary(polygon, num_points)
-        simple = Polygon(points)
+        simple = Polygon(points).buffer(0) # helps ensure valid
 
         voronoi_graph = interior_voronoi(simple)
         bn = boundary_nodes(voronoi_graph)
