@@ -2,7 +2,7 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 from scipy import signal
-from tqdm import tqdm
+from loguru import logger
 
 from valleyx.profile.split import split_profile
 
@@ -38,7 +38,14 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold: int,
 
     # classify floor points and wall points on each profile
     processed_dfs = []
-    for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
+    grouped = xsections.groupby(['streamID', 'xsID'])
+    ngroups = len(grouped)
+
+    for i, ((streamID, xsID), profile) in enumerate(grouped):
+        percent_complete = (i / total_groups) * 100
+        if i % (ngroups // 100) == 0 or i == ngroups:  # Log at 1% steps or the last iteration
+            logger.debug(f"Iteration {i} / {total_groups} ({percent_complete:.2f}% complete): Processing streamID={stream_id}, xsID={xs_id}")
+
         classified = profile.copy()
         classified['bp'] = False
         peaks = signal.find_peaks(-classified['curvature'], distance=distance, height=height)[0]

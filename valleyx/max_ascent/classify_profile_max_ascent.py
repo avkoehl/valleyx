@@ -1,7 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-from tqdm import tqdm
+from loguru import logger
 
 from valleyx.terrain.flow_dir import flowdir_wbt
 from valleyx.terrain.flow_dir import trace_flowpath
@@ -44,7 +44,14 @@ def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope,
 
     # classify floor points and wall points on each profile
     processed_dfs = []
-    for (streamID, xsID), profile in tqdm(xsections.groupby(['streamID', 'xsID'])):
+    grouped = xsections.groupby(['streamID', 'xsID'])
+    ngroups = len(grouped)
+
+    for i, ((streamID, xsID), profile) in enumerate(grouped):
+        percent_complete = (i / total_groups) * 100
+        if i % (total_groups // 100) == 0 or i == total_groups:  # Log at 1% steps or the last iteration
+            logger.debug(f"Iteration {i} / {total_groups} ({percent_complete:.2f}% complete)")
+
         classified = profile.copy()
         classified['bp'] = classified['curvature'] < 0
         classified = classify_profile_max_ascent(classified, fdir, dirmap, slope,
