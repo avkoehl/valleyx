@@ -12,8 +12,8 @@ from valleyx.geometry.cross_section import get_points_on_linestring
 from valleyx.geometry.cross_section import get_cross_section_points_from_points
 
 def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
-                      int, point_spacing: int, subbasins:
-                      Optional[xr.DataArray] = None) -> gpd.GeoDataFrame:
+                      int, line_max_width: Optional[int] = None, point_spacing: int, 
+                      subbasins: Optional[xr.DataArray] = None) -> gpd.GeoDataFrame:
     """
     Create cross section profiles for a stream network and a given raster or stack of rasters.
 
@@ -24,7 +24,9 @@ def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
     line_spacing: int
         The distance between cross sections
     line_width: int
-        The length of each cross section
+        The length of each cross section (will be overridden by subbasins if provided
+    line_max_width: Optional[int]:
+        The maximum length for the xsection
     point_spacing: int
         The distance between points to observe along each cross section line
     subbasins: Optional[xr.DataArray], optional
@@ -49,9 +51,17 @@ def network_xsections(flowlines: gpd.GeoSeries, line_spacing: int, line_width:
         if subbasins is not None:
             poly = single_polygon_from_binary_raster(subbasins == streamID)
             width = int(max(get_length_and_width(poly)) + 1)
+            
+            if line_max_width:
+                if line_max_width < width:
+                    width = line_max_width
+
             xspoints = flowline_xsections(flowline, line_spacing, width, point_spacing)
             xspoints = xspoints.clip(poly)
         else:
+            if max_length:
+                if max_length < line_width:
+                    line_width = max_length
             xspoints = flowline_xsections(flowline, line_spacing, line_width, point_spacing)
 
         xspoints['streamID'] = streamID

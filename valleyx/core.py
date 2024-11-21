@@ -14,7 +14,7 @@ class ValleyConfig:
 
     # Reach delineation params
     hand_threshold: float
-    spacing: float
+    spacing: int
     minsize: int
     window: int
 
@@ -22,14 +22,15 @@ class ValleyConfig:
     sigma: float
 
     # Cross Section Params
-    line_spacing: float
-    line_width: float
-    point_spacing: float
+    line_spacing: int
+    line_width: int
+    line_max_width: int
+    point_spacing: int
 
     # Cross section preprocessing
-    min_hand_jump: float
+    min_hand_jump: int
     ratio: float
-    min_peak_prominence: float
+    min_peak_prominence: int
     min_distance: int
 
     # Sustained slope params
@@ -66,6 +67,7 @@ def extract_valleys(dem, flowlines, wbt, config):
         config.sigma,
         config.line_spacing,
         config.line_width,
+        config.line_max_width,,
         config.point_spacing,
         config.min_hand_jump,
         config.ratio,
