@@ -107,8 +107,8 @@ def align_flowlines(flowlines, flow_acc, flow_dir, wbt):
 
     if set(unique_flowlines) - set(unique_flowpaths):
         sys.exit("some flowlines not in flowpaths, something went wrong")
-    if set(unique_flowpaths) - set(unique_flowlines):
-        warnings.warn("There are more flowpath ids then flowline ids, this is probably the result of the whiteboxtools raster_stream_to_vector method not creating a flowline in the case of a flowpath with a single cell")
+    #if set(unique_flowpaths) - set(unique_flowlines):
+    #    warnings.warn("There are more flowpath ids then flowline ids, this is probably the result of the whiteboxtools raster_stream_to_vector method not creating a flowline in the case of a flowpath with a single cell")
 
 
     flowlines = gpd.GeoSeries(flowlines['geometry'].values, index=flowlines['streamID'], crs= flowpaths.rio.crs)

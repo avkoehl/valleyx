@@ -67,7 +67,7 @@ def extract_valleys(dem, flowlines, wbt, config):
         config.sigma,
         config.line_spacing,
         config.line_width,
-        config.line_max_width,,
+        config.line_max_width,
         config.point_spacing,
         config.min_hand_jump,
         config.ratio,

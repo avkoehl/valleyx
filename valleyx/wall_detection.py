@@ -50,7 +50,7 @@ def detect_wallpoints(
         f"Creating xsections, line interval: {line_spacing}, pt interval: {point_spacing}"
     )
     xsections = network_xsections(
-        flowlines, line_spacing, line_width, line_max_width, point_spacing, dataset["subbasin"]
+        flowlines, line_spacing, line_width, point_spacing, line_max_width, dataset["subbasin"]
     )
     logger.debug(
         f"Number of xsections: {len(xsections['xsID'].unique())}, number of points: {len(xsections)}"
