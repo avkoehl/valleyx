@@ -145,9 +145,6 @@ def _compute_reaches(
     for ID, valley_floor in valley_floors.items():
         count += 1
         percent = round(count / len(valley_floors) * 100, 2)
-        logger.debug(
-            f"Splitting {ID} into reaches, {count}/{len(valley_floors)} {percent}%"
-        )
         if ID not in flowlines.index.values:
             continue
         flowpath = flowpaths.where(flowpaths == ID, drop=False)
@@ -196,7 +193,9 @@ def _compute_reaches(
         points_df["segment_id"] = ID
         all_points = pd.concat([all_points, points_df], ignore_index=True)
         num_reaches = len(points_df)
-        logger.debug(f"split {ID} into {num_reaches} reaches")
+        logger.debug(
+            f"split {ID} into {num_reaches} reaches, {count}/{len(valley_floors)} {percent}"
+        )
     return all_flowpath_cells, all_points, all_points_snapped
 
 
