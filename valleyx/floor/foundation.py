@@ -14,8 +14,6 @@ from skimage import filters
 from skimage.segmentation import felzenszwalb
 from skimage.morphology import label
 from skimage.morphology import isotropic_dilation
-from skimage.morphology import binary_erosion
-from skimage.morphology import binary_dilation
 
 from valleyx.floor.connect import connected
 
@@ -51,8 +49,7 @@ def foundation(slope, flowpaths, apst):
     regions = _felzenszwalb_regions(smoothed)
     thresholded, _ = _threshold_region_slope_medians(regions, smoothed, apst)
     base = _connectivity(thresholded, flowpaths, smoothed, apst)
-    base.data = binary_dilation(base.data)
-    base.data = binary_erosion(base.data)
+    base.data = binary_fill_holes(base.data)
     return base
 
 def _felzenszwalb_regions(image, scale=100, sigma=0.5, min_size=100):
