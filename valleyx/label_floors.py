@@ -37,15 +37,14 @@ def label_floors(
     )
 
     for i, streamID in enumerate(finite_unique(dataset["subbasin"])):
-        logger.debug(
-            f"Finding floor for streamID, count: {i} of {len(finite_unique(dataset['subbasin']))}"
-        )
         clipped_data = dataset.where(dataset["subbasin"] == streamID)
 
         points = wall_points.loc[wall_points["streamID"] == streamID]
 
         if points is not None:
-            logger.debug(f"Points found for {streamID}: {len(points)}")
+            logger.debug(
+                    f"{streamID}, count: {i} of {len(finite_unique(dataset['subbasin']))}, points: {len(points)}"
+                    )
             floor = subbasin_floor(
                 points,
                 clipped_data["slope"],
@@ -58,7 +57,9 @@ def label_floors(
             )
             floors = floors | floor
         else:
-            logger.debug(f"No points found for {streamID}")
+            logger.debug(
+                    f"{streamID}, count: {i} of {len(finite_unique(dataset['subbasin']))}, points: 0"
+                    )
             continue  # no fkoor for subbasin other than the foundation
 
     # 0 = not floor, 1 = flowpath, 2 = base, 3 = added
