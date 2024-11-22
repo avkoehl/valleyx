@@ -41,7 +41,7 @@ def flow_accumulation_workflow(dem, wbt):
 				out_type="cells", 
 				log=False, 
 				clip=False, 
-				pntr=False, 
+				pntr=True, 
 				esri_pntr=False, 
 				)
 
