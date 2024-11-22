@@ -41,7 +41,7 @@ def flow_accumulation_workflow(dem, wbt):
                 files['conditioned_dem'], 
                 files['flow_dir'], 
                 esri_pntr=False, 
-                callback=mycallback
+                callback=my_callback
                 )
 
         wbt.d8_flow_accumulation(
@@ -52,7 +52,7 @@ def flow_accumulation_workflow(dem, wbt):
                 clip=False, 
                 pntr=True, 
                 esri_pntr=False, 
-                callback=mycallback
+                callback=my_callback
                 )
 
         # load the files
