@@ -13,12 +13,13 @@ def flow_accumulation_workflow(dem, wbt):
         flow_dir
         flow_acc
     """
+    wbt_messages = []
     if not wbt.verbose:
         verbose_flipped = True
         wbt.set_verbose_mode(True) # temporary
     def my_callback(value):
         if not '%' in value:
-            print(value)
+            wbt_messages.append(value)
 
     work_dir = wbt.work_dir
     names = ["temp", "conditioned_dem", "flow_dir", "flow_acc"]
@@ -66,9 +67,9 @@ def flow_accumulation_workflow(dem, wbt):
         return conditioned, flow_dir, flow_acc
 
     except (IOError, OSError) as e:
-        raise RuntimeError(f"File operation failed: {e}")
+        raise RuntimeError(f"File operation failed: {e}\nwhitebox messages: {' '.join(wbt_messages)}")
     except Exception as e:
-        raise RuntimeError(f"Unexpected error during DEM processing: {e}")
+        raise RuntimeError(f"Unexpected error during DEM processing: {e}\nwhitebox messages: {' '.join(wbt_messages)}")
 
     finally:
         for file in created_files:
