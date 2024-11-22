@@ -13,6 +13,13 @@ def flow_accumulation_workflow(dem, wbt):
 		flow_dir
 		flow_acc
 	"""
+    if not wbt.verbose:
+        verbose_flipped = True
+        wbt.set_verbose_mode(True) # temporary
+    def my_callback(value):
+        if not '%' in value:
+            print(value)
+
 	work_dir = wbt.work_dir
 	names = ["temp", "conditioned_dem", "flow_dir", "flow_acc"]
 	fnames = [os.path.join(work_dir, name + '.tif') for name in names]
@@ -27,12 +34,14 @@ def flow_accumulation_workflow(dem, wbt):
 				files['conditioned_dem'],
 				fix_flats = True,
 				flat_increment = None,
-				max_depth = None)
+				max_depth = None,
+                callback=my_callback)
 
 		wbt.d8_pointer(
 				files['conditioned_dem'], 
 				files['flow_dir'], 
 				esri_pntr=False, 
+                callback=mycallback
 				)
 
 		wbt.d8_flow_accumulation(
@@ -43,6 +52,7 @@ def flow_accumulation_workflow(dem, wbt):
 				clip=False, 
 				pntr=True, 
 				esri_pntr=False, 
+                callback=mycallback
 				)
 
 		# load the files
@@ -64,3 +74,5 @@ def flow_accumulation_workflow(dem, wbt):
 		for file in created_files:
 			if os.path.exists(file):
 				os.remove(file)
+        if verbose_flipped:
+            wbt.set_verbose(False)
