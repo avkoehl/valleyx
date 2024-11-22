@@ -42,9 +42,9 @@ def classify_profiles(xsections: gpd.GeoDataFrame, slope_threshold: int,
     ngroups = len(grouped)
 
     for i, ((streamID, xsID), profile) in enumerate(grouped):
-        percent_complete = (i / total_groups) * 100
+        percent_complete = (i / ngroups) * 100
         if i % (ngroups // 100) == 0 or i == ngroups:  # Log at 1% steps or the last iteration
-            logger.debug(f"Iteration {i} / {total_groups} ({percent_complete:.2f}% complete): Processing streamID={stream_id}, xsID={xs_id}")
+            logger.debug(f"Iteration {i} / {ngroups} ({percent_complete:.2f}% complete): Processing streamID={stream_id}, xsID={xs_id}")
 
         classified = profile.copy()
         classified['bp'] = False
