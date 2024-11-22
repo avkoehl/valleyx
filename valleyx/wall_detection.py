@@ -57,6 +57,7 @@ def detect_wallpoints(
     )
     logger.debug(f"Observing values at cross section points, {dataset.data_vars}")
     xsections = observe_values(xsections, dataset)
+    logger.debug("Preprocessing profiles")
     xsections = preprocess_profiles(
         xsections, min_hand_jump, ratio, min_distance, min_peak_prominence
     )
