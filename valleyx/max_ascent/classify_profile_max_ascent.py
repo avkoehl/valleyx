@@ -49,7 +49,7 @@ def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope,
 
     for i, ((streamID, xsID), profile) in enumerate(grouped):
         percent_complete = (i / ngroups) * 100
-        if i % (ngroups // 100) == 0 or i == total_groups:  # Log at 1% steps or the last iteration
+        if i % (ngroups // 100) == 0 or i == ngroups:  # Log at 1% steps or the last iteration
             logger.debug(f"Iteration {i} / {total_groups} ({percent_complete:.2f}% complete)")
 
         classified = profile.copy()
