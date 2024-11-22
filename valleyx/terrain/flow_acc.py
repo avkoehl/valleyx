@@ -75,4 +75,4 @@ def flow_accumulation_workflow(dem, wbt):
             if os.path.exists(file):
                 os.remove(file)
         if verbose_flipped:
-            wbt.set_verbose(False)
+            wbt.set_verbose_mode(False)
