@@ -14,6 +14,7 @@ def flow_accumulation_workflow(dem, wbt):
         flow_acc
     """
     wbt_messages = []
+    verbose_flipped = False
     if not wbt.verbose:
         verbose_flipped = True
         wbt.set_verbose_mode(True) # temporary
