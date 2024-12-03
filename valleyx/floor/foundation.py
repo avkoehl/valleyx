@@ -8,8 +8,8 @@ Finds all the low slope areas connected to the flowpath network
 """
 import numpy as np
 from skimage.morphology import label
-from scipy.ndimage import binary_fill_holes
 from scipy.ndimage import gaussian_filter
+from scipy.ndimage import binary_closing
 from skimage import filters
 from skimage.segmentation import felzenszwalb
 from skimage.morphology import label
@@ -49,7 +49,8 @@ def foundation(slope, flowpaths, apst):
     regions = _felzenszwalb_regions(smoothed)
     thresholded, _ = _threshold_region_slope_medians(regions, smoothed, apst)
     base = _connectivity(thresholded, flowpaths, smoothed, apst)
-    base.data = binary_fill_holes(base.data)
+    structure = np.ones((5,5))
+    base.data = binary_closing(base.data, structure=structure, iterations=3)
     return base
 
 def _felzenszwalb_regions(image, scale=100, sigma=0.5, min_size=100):
