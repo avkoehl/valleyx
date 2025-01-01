@@ -37,7 +37,7 @@ def label_floors(
     )
 
     # if wallpoints is None or is empty return foundation and flow paths
-    if wallpoints is None or len(wallpoints) == 0:
+    if wall_points is None or len(wall_points) == 0:
         result = floors.copy()
         result.data = np.zeros_like(floors)
         result = result.astype(np.uint8)
