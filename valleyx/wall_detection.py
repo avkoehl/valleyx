@@ -77,10 +77,11 @@ def detect_wallpoints(
         wbt,
     )
     wallpoints = xsections.loc[xsections["wallpoint"], "geom"]
-
+    
     logger.debug(f"Number of wall points: {len(wallpoints)}")
-    logger.debug("Finding upslope neighbor for each wall point")
-    wallpoints = finalize_wp(wallpoints, dataset["conditioned_dem"], wbt, dataset)
+    if len(wallpoints): # atleast one wallpoints
+        logger.debug("Finding upslope neighbor for each wall point")
+        wallpoints = finalize_wp(wallpoints, dataset["conditioned_dem"], wbt, dataset)
 
     logger.success("Completed wall point detection")
     return wallpoints

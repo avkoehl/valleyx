@@ -36,6 +36,15 @@ def label_floors(
         dataset["slope"], dataset["flow_path"], foundation_threshold
     )
 
+    # if wallpoints is None or is empty return foundation and flow paths
+    if wallpoints is None or len(wallpoints) == 0:
+        result = floors.copy()
+        result.data = np.zeros_like(floors)
+        result = result.astype(np.uint8)
+        result.data[foundation_floor] = 2
+        result.data[dataset['flow_path'] > 0] = 1
+        return result
+
     for i, streamID in enumerate(finite_unique(dataset["subbasin"])):
         clipped_data = dataset.where(dataset["subbasin"] == streamID)
 
@@ -71,6 +80,7 @@ def label_floors(
     combined.data[dataset["flow_path"] > 0] = 1
 
     # keep only cells with connectivity to the flowpaths
+    # this removes small patches that may be stranded after slope thresholding
     result = connected((combined > 0), dataset["flow_path"])
     combined.data[~result] = 0
 
