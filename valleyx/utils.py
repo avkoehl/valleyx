@@ -29,7 +29,8 @@ def setup_wbt(working_dir, verbose=False, max_procs=1):
 
 
 def load_input(dem_path, flowline_path):
-    dem = rxr.open_rasterio(dem_path, masked=True).squeeze()
+    dem = rxr.open_rasterio(dem_path, masked=True)
+    dem = dem.squeeze()
     flowlines = gpd.read_file(flowline_path)
     if flowlines.crs is None:
         flowlines.crs = dem.rio.crs
