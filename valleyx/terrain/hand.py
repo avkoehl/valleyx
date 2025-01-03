@@ -13,7 +13,9 @@ from pysheds._sgrid import _assign_hand_heights_numba
 from pysheds._sgrid import _mfd_hand_iter_numba
 
 
-def channel_relief(dem, flow_paths, wbt=None, method="dinf") -> xr.DataArray:
+def channel_relief(
+    dem: xr.DataArray, flow_paths: xr.DataArray, wbt=None, method="dinf"
+) -> xr.DataArray:
     """
     Compute elevation above nearest stream cell (aka HAND)
 
@@ -88,12 +90,13 @@ def hand_steepest(
     os.remove(files["temp_conditioned_dem"])
     os.remove(files["temp_flowpaths"])
 
-    try: 
+    try:
         hand = rxr.open_rasterio(files["hand"], masked=True).squeeze()
     except:
         raise ValueError("WhiteboxTools failed to compute HAND")
 
     return hand
+
 
 def hand_pysheds(
     dem: xr.DataArray, flow_paths: xr.DataArray, routing_method: str

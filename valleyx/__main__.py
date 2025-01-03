@@ -1,5 +1,4 @@
 import argparse
-import os
 import sys
 import toml
 import shutil
@@ -13,9 +12,10 @@ from valleyx.utils import load_input
 
 def setup_logging(enable_logging, log_file):
     if enable_logging:
-        logger.enable("valleyx")
+        logger.enable("          valleyx")
         if log_file:
             logger.remove()
+
             logger.add(log_file, level="DEBUG")
         else:
             logger.remove()
