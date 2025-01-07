@@ -21,54 +21,56 @@ def delineate_reaches(
     dataset, flowlines, wbt, hand_threshold, spacing, minsize, window
 ):
     """
-        Delineate stream network into reaches based estimated valley floor width
+    Delineate stream network into reaches based estimated valley floor width
 
-        This function segments stream networks into reaches by:
-        1. Identifying valley floors using HAND thresholds
-        2. Splitting stream segments into reaches based on valley width
-        3. Labeling corresponding subbasins and hillslopes
+    This function segments stream networks into reaches by:
+    1. Identifying valley floors using HAND thresholds
+    2. Splitting stream segments into reaches based on valley width
+    3. Labeling corresponding subbasins and hillslopes
 
-        Reach IDs are assigned as: original_segment_id * 100 + reach_number
+    Reach IDs are assigned as: original_segment_id * 100 + reach_number
 
-        Parameters
-        ----------
-        dataset: dataset (xarray.Dataset):
-            Multi-layer dataset containing:
-            * flow_dir: D8 flow direction grid
-            * flow_acc: Flow accumulation grid
-            * flow_path: Rasterized stream network
-            * subbasin: Labeled subbasin grid
-            * hand: Height Above Nearest Drainage
-        flowlines: gpd.GeoSeries
-            flowlines
-        wbt : WhiteboxTools
-                Initialized WhiteboxTools object
-        hand_threshold : float
-                Maximum elevation above nearest drainage for valley floor delineation
-        spacing : float
-                Spacing in distance to sample width measurements at
-        minsize : float
-                Minimum reach length
-        window : int
-                Window size for smoothing the width series in number of samples
+    Parameters
+    ----------
+    dataset: dataset (xarray.Dataset):
+        Multi-layer dataset containing:
+        * flow_dir: D8 flow direction grid
+        * flow_acc: Flow accumulation grid
+        * flow_path: Rasterized stream network
+        * subbasin: Labeled subbasin grid
+        * hand: Height Above Nearest Drainage
+    flowlines: gpd.GeoSeries
+        flowlines
+    wbt : WhiteboxTools
+            Initialized WhiteboxTools object
+    hand_threshold : float
+            Maximum elevation above nearest drainage for valley floor delineation
+    spacing : float
+            Spacing in distance to sample width measurements at
+    minsize : float
+            Minimum reach length
+    window : int
+            Window size for smoothing the width series in number of samples
 
-        Returns
-        -------
-        tuple
-                A tuple containing:
-                - flowlines_reaches (geopandas.GeoSeries):
-                        Vector stream network split into reaches
-                - dataset (xarray.Dataset):
-                        Multi-layer dataset containing copying original layers and modifies and/or adds the following:
-                        * flow_path: Updated stream network with reach IDs
-                        * subbasin: Labeled reach subbasins with reach IDs
-                        * hillslope: Labeled hillslopes for each subbasin
+    Returns
+    -------
+    tuple
+            A tuple containing:
+            - flowlines_reaches (geopandas.GeoSeries):
+                    Vector stream network split into reaches
+            - dataset (xarray.Dataset):
+                    Multi-layer dataset containing copying original layers and modifies and/or adds the following:
+                    * flow_path: Updated stream network with reach IDs
+                    * subbasin: Labeled reach subbasins with reach IDs
+                    * hillslope: Labeled hillslopes for each subbasin
 
     """
     dataset = dataset.copy()
     logger.info("Starting delineate reaches processing")
     logger.debug("Rough out valley floors")
-    vfs = rough_out_hand(flowlines, dataset["subbasin"], dataset["hand"], hand_threshold)
+    vfs = rough_out_hand(
+        flowlines, dataset["subbasin"], dataset["hand"], hand_threshold
+    )
     logger.debug("Split segments into reaches")
     result = reach_subbasins(
         vfs,
@@ -202,6 +204,7 @@ def _compute_reaches(
 def _relabel_flowpaths(flowpath_cells, flowpaths):
     # relabel flowpaths
     new_fp = flowpaths.copy()
+    new_fp.data = np.full(flowpaths.shape, np.nan, dtype=flowpaths.dtype)
     flowpath_cells["label"] = (
         flowpath_cells["segment_id"] * 100 + flowpath_cells["reach_id"]
     ).astype(int)
@@ -307,7 +310,13 @@ def flowpath_to_flowlines(flowpath, flowdir, wbt):
         "flowlines": os.path.join(work_dir, "flowlines.shp"),
     }
 
-    flowpath.rio.to_raster(files["temp_flowpath"])
+    # for some reason wasn't working without this step
+    fp = flowpath.copy()
+    fp = fp.where(~np.isnan(fp), -9999)
+    fp = fp.astype(np.int32)
+    fp = fp.rio.write_nodata(-9999)
+
+    fp.rio.to_raster(files["temp_flowpath"])
     flowdir.rio.to_raster(files["temp_flowdir"])
 
     wbt.raster_streams_to_vector(

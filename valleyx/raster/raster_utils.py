@@ -1,10 +1,9 @@
 import numpy as np
-import geopandas as gpd
-import rioxarray as rxr
 import xarray as xr
 from shapely.geometry import Point
 
-def point_to_pixel(raster: xr.DataArray, point: Point) ->  (int,int):
+
+def point_to_pixel(raster: xr.DataArray, point: Point) -> tuple[int, int]:
     """
     Converts shapely point to the row and col index of that point according
     to the affine transformation of the input raster
@@ -18,7 +17,7 @@ def point_to_pixel(raster: xr.DataArray, point: Point) ->  (int,int):
 
     Returns
     -------
-    tuple: 
+    tuple:
         (row, col)
     """
     transform = raster.rio.transform()
@@ -27,6 +26,7 @@ def point_to_pixel(raster: xr.DataArray, point: Point) ->  (int,int):
     lat = point.y
     col, row = inverse * (lon, lat)
     return int(row), int(col)
+
 
 def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:
     """
@@ -49,6 +49,7 @@ def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:
     transform = raster.rio.transform()
     lon, lat = transform * (col, row)  # (x, y) corresponds to (col, row)
     return Point(lon, lat)
+
 
 def finite_unique(raster: xr.DataArray) -> np.ndarray:
     """
