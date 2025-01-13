@@ -11,6 +11,7 @@ from valleyx.utils import setup_wbt
 from valleyx.utils import make_dir
 from valleyx.utils import load_input
 
+
 def setup_logging(enable_logging, log_file):
     if enable_logging:
         logger.enable("valleyx")
@@ -23,6 +24,7 @@ def setup_logging(enable_logging, log_file):
             logger.add(sys.stderr, level="DEBUG")
         logger.info("logging enabled")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dem_file", type=str, required=True)
@@ -32,13 +34,13 @@ if __name__ == "__main__":
     parser.add_argument("--floor_ofile", type=str, required=True)
     parser.add_argument("--flowlines_ofile", type=str, default=None)
     parser.add_argument("--wp_ofile", type=str, default=None)
-    parser.add_argument("--enable_logging", action='store_true') # false if not set
+    parser.add_argument("--enable_logging", action="store_true")  # false if not set
     parser.add_argument("--log_file", type=str, default=None)
     args = parser.parse_args()
 
     setup_logging(args.enable_logging, args.log_file)
 
-    wbt = setup_wbt(args.working_dir)
+    wbt = setup_wbt(args.working_dir, verbose=False, max_procs=1)
     dem, flowlines = load_input(args.dem_file, args.flowlines_file)
     params = toml.load(args.param_file)
 
@@ -46,19 +48,14 @@ if __name__ == "__main__":
 
     make_dir(args.working_dir, remove_existing=True)
 
-    results = extract_valleys(
-            dem,
-            flowlines,
-            wbt,
-            config
-    )
+    results = extract_valleys(dem, flowlines, wbt, config)
 
-    results['floor'].rio.to_raster(args.floor_ofile)
+    results["floor"].rio.to_raster(args.floor_ofile)
 
     if args.flowlines_ofile:
-        results['flowlines'].to_file(args.flowlines_ofile)
+        results["flowlines"].to_file(args.flowlines_ofile)
 
     if args.wp_ofile:
-        results['wallpoints'].to_file(args.wp_ofile)
+        results["wallpoints"].to_file(args.wp_ofile)
 
     shutil.rmtree(args.working_dir)
