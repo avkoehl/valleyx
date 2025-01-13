@@ -1,6 +1,6 @@
 # Valleyx
 
-This is the code for 'valleyx', a python package for extracting valley floors from digital elevation models.
+`valleyx` is a python package for extracting valley floors from digital elevation models.
 
 ## Installation
 
@@ -86,7 +86,7 @@ python -m valleyx -h
 ```
 
 ## File Structure
-
+```
 ./
     __init__.py - Package initialization
     __main__.py - Entry point of the package
@@ -135,8 +135,8 @@ python -m valleyx -h
         hillslopes.py - Hillslope delineation
         subbasins.py - Sub-basin delineation
         surface.py - Surface analysis utilities
-
+```
 ## Contact
 
-Arthur Koehl
+Arthur Koehl  
 avkoehl at ucdavis .edu
