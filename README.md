@@ -2,7 +2,7 @@
 
 `valleyx` is a python package for extracting valley floors from digital elevation models.
 
-[!map of extracted valley floor](./examples/img/result.png)
+![map of extracted valley floor](/examples/img/result.png)
 
 ## Installation
 
