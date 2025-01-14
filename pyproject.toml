@@ -30,6 +30,7 @@ toml = "^0.10.2"
 ipython = "^8.29.0"
 matplotlib = "^3.9.2"
 notebook = "^7.2.2"
+xarray-spatial = "^0.4.0"
 
 [build-system]
 requires = ["poetry-core"]

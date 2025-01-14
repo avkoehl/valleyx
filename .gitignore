@@ -5,6 +5,7 @@ outputs/
 working_dir/
 *.pdf
 cache/
+runner.py
 
 # vim
 [._]*.s[a-v][a-z]
