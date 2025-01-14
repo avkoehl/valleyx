@@ -130,7 +130,7 @@ def flowdir_wbt(dem: xr.DataArray, wbt: WhiteboxTools):
 
     dem.rio.to_raster(demfile)
 
-    wbt.d8_pointer(demfile, flowdirfile, max_procs=1)
+    wbt.d8_pointer(demfile, flowdirfile)
 
     with rxr.open_rasterio(flowdirfile, masked=True) as raster:
         fdir = raster.squeeze().copy()
