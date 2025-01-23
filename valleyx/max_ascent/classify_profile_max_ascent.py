@@ -9,12 +9,13 @@ from valleyx.terrain.flow_dir import DIRMAPS
 from valleyx.max_ascent.max_ascent import invert_dem
 from valleyx.profile.split import split_profile
 from valleyx.raster.raster_utils import point_to_pixel
-from valleyx.raster.raster_utils import pixel_to_point
 
-def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope, 
-                                 num_cells, slope_threshold, wbt):
+
+def classify_profiles_max_ascent(
+    xsections: gpd.GeoDataFrame, dem, slope, num_cells, slope_threshold, wbt
+):
     """
-    Find the wall points for a stream network's cross sections. 
+    Find the wall points for a stream network's cross sections.
     Using condition on max ascent path of that point
 
     Parameters
@@ -31,7 +32,7 @@ def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope,
     Returns
     -------
     gpd.GeoDataFrame
-        matches input dataframe with an additional boolean column: 'wallpoint' 
+        matches input dataframe with an additional boolean column: 'wallpoint'
     """
     req = ["streamID", "xsID", "alpha", "slope", "curvature"]
     for col in req:
@@ -40,61 +41,78 @@ def classify_profiles_max_ascent(xsections: gpd.GeoDataFrame, dem, slope,
 
     inverted_dem = invert_dem(dem)
     fdir = flowdir_wbt(inverted_dem, wbt)
-    dirmap = DIRMAPS['wbt']
+    dirmap = DIRMAPS["wbt"]
 
     # classify floor points and wall points on each profile
     processed_dfs = []
-    grouped = xsections.groupby(['streamID', 'xsID'])
+    grouped = xsections.groupby(["streamID", "xsID"])
     ngroups = len(grouped)
 
-    for i, ((streamID, xsID), profile) in enumerate(grouped):
-        percent_complete = (i / ngroups) * 100
-        if i % (ngroups // 100) == 0 or i == ngroups:  # Log at 1% steps or the last iteration
-            logger.debug(f"Iteration {i} / {ngroups} ({percent_complete:.2f}% complete)")
+    for i, ((_, _), profile) in enumerate(grouped):
+        log_interval = max(1, ngroups // 100)
+        if i % log_interval == 0 or i == ngroups:
+            percent_complete = (i / ngroups) * 100
+            logger.debug(
+                f"Iteration {i} / {ngroups} ({percent_complete:.2f}% complete)"
+            )
 
         classified = profile.copy()
-        classified['bp'] = classified['curvature'] < 0
-        classified = classify_profile_max_ascent(classified, fdir, dirmap, slope,
-                                                 num_cells, slope_threshold)
+        classified["bp"] = classified["curvature"] < 0
+        classified = classify_profile_max_ascent(
+            classified, fdir, dirmap, slope, num_cells, slope_threshold
+        )
         processed_dfs.append(classified)
 
     processed_df = gpd.GeoDataFrame(pd.concat(processed_dfs, ignore_index=True))
     return processed_df
 
-def classify_profile_max_ascent(profile, fdir, dirmap, slope, num_cells, slope_threshold):
-    """ for each bp, see if it exceeds num_cells at or above slope_threshold along max ascent path """
+
+def classify_profile_max_ascent(
+    profile, fdir, dirmap, slope, num_cells, slope_threshold
+):
+    """for each bp, see if it exceeds num_cells at or above slope_threshold along max ascent path"""
 
     # split profile
-    profile['wallpoint'] = False
+    profile["wallpoint"] = False
     pos, neg = split_profile(profile, duplicate_center=True)
 
-    pos_wall_loc = _find_wall_half_max_ascent(pos, fdir, dirmap, slope, num_cells, slope_threshold)
-    neg_wall_loc = _find_wall_half_max_ascent(neg, fdir, dirmap, slope, num_cells, slope_threshold)
+    pos_wall_loc = _find_wall_half_max_ascent(
+        pos, fdir, dirmap, slope, num_cells, slope_threshold
+    )
+    neg_wall_loc = _find_wall_half_max_ascent(
+        neg, fdir, dirmap, slope, num_cells, slope_threshold
+    )
 
     if pos_wall_loc is not None:
         # set the next location as wall
-        #next_loc = pos.index[pos.index.get_loc(pos_wall_loc) + 1]
+        # next_loc = pos.index[pos.index.get_loc(pos_wall_loc) + 1]
         profile.loc[pos_wall_loc, "wallpoint"] = True
     if neg_wall_loc is not None:
-        #next_loc = neg.index[neg.index.get_loc(neg_wall_loc) + 1]
+        # next_loc = neg.index[neg.index.get_loc(neg_wall_loc) + 1]
         profile.loc[neg_wall_loc, "wallpoint"] = True
     return profile
 
-def _find_wall_half_max_ascent(half_profile, fdir, dirmap, slope, num_cells, slope_threshold):
-    half_profile.loc[half_profile.index[0], 'bp'] = False # this is the stream
-    half_profile.loc[half_profile.index[0+1], 'bp'] = True # this is the cell immediately next to the stream
 
-    bps = half_profile.loc[half_profile['bp'], 'geom']
+def _find_wall_half_max_ascent(
+    half_profile, fdir, dirmap, slope, num_cells, slope_threshold
+):
+    half_profile.loc[half_profile.index[0], "bp"] = False  # this is the stream
+    half_profile.loc[half_profile.index[0 + 1], "bp"] = (
+        True  # this is the cell immediately next to the stream
+    )
+
+    bps = half_profile.loc[half_profile["bp"], "geom"]
 
     for ind, point in bps.items():
         if is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
             return ind
     return None
 
+
 def is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
     # get path
     row, col = point_to_pixel(fdir, point)
-    points, path = trace_flowpath(row, col, fdir, dirmap, num_cells+1)
+    points, path = trace_flowpath(row, col, fdir, dirmap, num_cells + 1)
     path = path[1:]
 
     if len(path) < num_cells:
