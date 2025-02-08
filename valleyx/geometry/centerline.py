@@ -1,5 +1,5 @@
 """
-Function to get centerline of a valley polygon 
+Function to get centerline of a valley polygon
 
 Ensures that the start and end of the centerline are near the start and end of the stream line
 
@@ -9,7 +9,7 @@ Ensures that the start and end of the centerline are near the start and end of t
 
 https://observablehq.com/@veltman/centerline-labeling
 
-Alternatively could try skeletonization or the method introduced in 
+Alternatively could try skeletonization or the method introduced in
 https://esurf.copernicus.org/articles/10/437/2022/
 """
 
@@ -23,13 +23,18 @@ from shapely.geometry import Point, Polygon, LineString
 from shapelysmooth import taubin_smooth  # prefer taubin unless need to preserve nodes
 from shapelysmooth import chaikin_smooth
 
-from valleyx.geometry.geom_utils import add_point_to_polygon_exterior
-from valleyx.geometry.geom_utils import extend_linestring
 from valleyx.geometry.geom_utils import create_points_along_boundary
 
 
-def polygon_centerline(polygon, num_points, source=None, target=None,
-                       simplify_tolerance=None, dist_tolerance=None, smooth_output=True) -> LineString:
+def polygon_centerline(
+    polygon,
+    num_points,
+    source=None,
+    target=None,
+    simplify_tolerance=None,
+    dist_tolerance=None,
+    smooth_output=True,
+) -> LineString:
     """
     generic method for getting centerline of a polygon
     WARNING will take a long time to run even with modest number of points (e.g 50)
@@ -41,7 +46,7 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
     if dist_tolerance is not None:
         while True:
             points = create_points_along_boundary(polygon, num_points)
-            simple = Polygon(points).buffer(0) # helps ensure valid
+            simple = Polygon(points).buffer(0)  # helps ensure valid
 
             voronoi_graph = interior_voronoi(simple)
             bn = boundary_nodes(voronoi_graph)
@@ -51,41 +56,39 @@ def polygon_centerline(polygon, num_points, source=None, target=None,
                 break
 
             if source is not None:
-                bn['distance_to_source'] = bn.distance(source)
-                if (bn['distance_to_source'] < dist_tolerance).sum() == 0:
+                bn["distance_to_source"] = bn.distance(source)
+                if (bn["distance_to_source"] < dist_tolerance).sum() == 0:
                     num_points *= 2
                     continue
             if target is not None:
-                bn['distance_to_target'] = bn.distance(target)
-                if (bn['distance_to_target'] < dist_tolerance).sum() == 0:
+                bn["distance_to_target"] = bn.distance(target)
+                if (bn["distance_to_target"] < dist_tolerance).sum() == 0:
                     num_points *= 2
                     continue
 
             break
     else:
         points = create_points_along_boundary(polygon, num_points)
-        simple = Polygon(points).buffer(0) # helps ensure valid
+        simple = Polygon(points).buffer(0)  # helps ensure valid
 
         voronoi_graph = interior_voronoi(simple)
         bn = boundary_nodes(voronoi_graph)
 
-
     if source is not None:
-        bn['distance_to_source'] = bn.distance(source)
+        bn["distance_to_source"] = bn.distance(source)
         sources = bn.sort_values(by="distance_to_source", inplace=False)
         sources = sources.iloc[[0]]
 
     if target is not None:
-        bn['distance_to_target'] = bn.distance(target)
+        bn["distance_to_target"] = bn.distance(target)
         targets = bn.sort_values(by="distance_to_target", inplace=False)
         targets = targets.iloc[[0]]
 
     # edge case
     if source is not None and target is not None:
-        if set(sources['node_id']).intersection(set(targets['node_id'])):
-            #raise ValueError("the source points and target points have overlap; they must be close to the same boundary segments")
+        if set(sources["node_id"]).intersection(set(targets["node_id"])):
+            # raise ValueError("the source points and target points have overlap; they must be close to the same boundary segments")
             return None
-
 
     path = find_best_path(voronoi_graph, sources, targets)
 
@@ -146,7 +149,7 @@ def boundary_nodes(g):
         record["geometry"] = Point(data["coords"])
         records.append(record)
     bn = pd.DataFrame.from_records(records)
-    bn = gpd.GeoDataFrame(bn, geometry="geometry", crs=3310)
+    bn = gpd.GeoDataFrame(bn, geometry="geometry")
     return bn
 
 
@@ -158,7 +161,7 @@ def find_best_path(g, sources, targets):
         for p in paths:
             path = LineString([Point(g.nodes[n]["coords"]) for n in p])
             all_paths.append(path)
-    all_paths = gpd.GeoDataFrame(geometry=all_paths, crs=3310)
+    all_paths = gpd.GeoDataFrame(geometry=all_paths)
 
     all_paths["length"] = all_paths.length
     # sort by length
