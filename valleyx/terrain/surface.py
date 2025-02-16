@@ -18,9 +18,9 @@ def elev_derivatives(dem, wbt, sigma):
     smoothed.data = filter_nan_gaussian_conserving(dem.data, sigma=sigma)
 
     files = {
-             "smoothed_dem": os.path.join(work_dir, "smoothed_dem.tif"),
-             "slope": os.path.join(work_dir, "slope.tif"),
-             "profile_curvature": os.path.join(work_dir, "profile_curvature.tif")}
+             "smoothed_dem": os.path.join(work_dir, f"{wbt.instance_id}-smoothed_dem.tif"}),
+             "slope": os.path.join(work_dir, f"{wbt.instance_id}-slope.tif"),
+             "profile_curvature": os.path.join(work_dir, f"{wbt.instance_id}-profile_curvature.tif")}
 
     smoothed.rio.to_raster(files['smoothed_dem'])
 

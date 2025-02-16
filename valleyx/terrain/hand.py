@@ -3,7 +3,6 @@ import os
 import numpy as np
 import rioxarray as rxr
 import xarray as xr
-from whitebox import WhiteboxTools
 from pysheds.grid import Grid
 from pysheds.view import Raster
 from pysheds.view import ViewFinder
@@ -11,6 +10,8 @@ from pysheds._sgrid import _angle_to_d8_numba
 from pysheds._sgrid import _dinf_hand_iter_numba
 from pysheds._sgrid import _assign_hand_heights_numba
 from pysheds._sgrid import _mfd_hand_iter_numba
+
+from valleysx.utils import WhiteBoxToolsUnique
 
 
 def channel_relief(
@@ -54,7 +55,7 @@ def channel_relief(
 
 
 def hand_steepest(
-    dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteboxTools
+    dem: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteBoxToolsUnique
 ) -> xr.DataArray:
     """
     Wrapper around elevation above nearest stream WBT method.
@@ -76,7 +77,7 @@ def hand_steepest(
     """
     work_dir = wbt.work_dir
     names = ["temp_conditioned_dem", "temp_flowpaths", "hand"]
-    fnames = [os.path.join(work_dir, name + ".tif") for name in names]
+    fnames = [os.path.join(work_dir, f"{wbt.instance_id}-{name}.tif") for name in names]
     files = {name: file for name, file in zip(names, fnames)}
 
     # save conditioned and flowpaths to temp files

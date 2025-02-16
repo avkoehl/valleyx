@@ -5,11 +5,10 @@ from numba.typed import Dict
 import numpy as np
 import geopandas as gpd
 import rioxarray as rxr
-from shapely.geometry import Point
-from whitebox import WhiteboxTools
 import xarray as xr
 
 from valleyx.raster.raster_utils import pixel_to_point
+from valleyx.utils import WhiteBoxToolsUnique
 
 DIRMAPS = {
     "esri": {
@@ -109,7 +108,7 @@ def trace_flowpath(
     return result, path
 
 
-def flowdir_wbt(dem: xr.DataArray, wbt: WhiteboxTools):
+def flowdir_wbt(dem: xr.DataArray, wbt: WhiteBoxToolsUnique):
     """
     wrapper around whiteboxtools d8 flowdir
 
@@ -125,8 +124,8 @@ def flowdir_wbt(dem: xr.DataArray, wbt: WhiteboxTools):
     xr.DataArray
         A raster of flow directions using WhiteBoxTools flow direction mappings
     """
-    demfile = os.path.join(wbt.work_dir, "fdir_dem.tif")
-    flowdirfile = os.path.join(wbt.work_dir, "fdir.tif")
+    demfile = os.path.join(wbt.work_dir, f"{wbt.instance_id}-fdir_dem.tif")
+    flowdirfile = os.path.join(wbt.work_dir, f"{wbt.instance_id}-fdir.tif")
 
     dem.rio.to_raster(demfile)
 

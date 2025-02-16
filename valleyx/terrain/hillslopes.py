@@ -6,23 +6,27 @@ input:
 output:
     hillslopes
 """
+
 import os
 
 import rioxarray as rxr
 import numpy as np
 import xarray as xr
-import skimage
-from whitebox import WhiteboxTools
 
 from valleyx.raster.raster_utils import finite_unique
+from valleyx.utils import WhiteBoxToolsUnique
 
-def label_hillslopes(flow_paths: xr.DataArray, flow_dir: xr.DataArray,
-                     subbasins: xr.DataArray, 
-                     wbt: WhiteboxTools) -> xr.DataArray:
+
+def label_hillslopes(
+    flow_paths: xr.DataArray,
+    flow_dir: xr.DataArray,
+    subbasins: xr.DataArray,
+    wbt: WhiteboxToolsUnique,
+) -> xr.DataArray:
     """
     Label the catchment areas draining into the flowpaths. This includes the
     left side, right side, and all the areas that flow into the channel head
-    point.  
+    point.
 
     It will find and label the catchment for each unique flowpath,
     so if the flowpaths have been segmented into reaches it will still work.
@@ -43,25 +47,28 @@ def label_hillslopes(flow_paths: xr.DataArray, flow_dir: xr.DataArray,
     -------
     hillslopes: xr.DataArray
     """
-    assert(set(finite_unique(subbasins).astype(np.float32)) == set(finite_unique(flow_paths).astype(np.float32)))
+    assert set(finite_unique(subbasins).astype(np.float32)) == set(
+        finite_unique(flow_paths).astype(np.float32)
+    )
 
     hillslopes = flow_paths.copy()
     hillslopes.data = np.zeros_like(flow_paths)
 
     for streamID in finite_unique(subbasins):
-        basin_mask = (subbasins == streamID)
+        basin_mask = subbasins == streamID
         flowpath_clipped = flow_paths.where(basin_mask)
         flowdir_clipped = flow_dir.where(basin_mask)
-        basins = wbt_label_drainage_sides(flowdir_clipped,
-                                      flowpath_clipped, wbt)
+        basins = wbt_label_drainage_sides(flowdir_clipped, flowpath_clipped, wbt)
         mask = ~np.isnan(basins)
         hillslopes = hillslopes.where(~mask, other=basins)
-    return hillslopes 
+    return hillslopes
 
-def wbt_label_drainage_sides(flow_dir: xr.DataArray, flow_paths: xr.DataArray,
-                             wbt: WhiteboxTools) -> xr.DataArray: 
+
+def wbt_label_drainage_sides(
+    flow_dir: xr.DataArray, flow_paths: xr.DataArray, wbt: WhiteBoxToolsUnique
+) -> xr.DataArray:
     """
-    Wrapper around whiteboxtools Hillslopes tool. 
+    Wrapper around whiteboxtools Hillslopes tool.
 
     Parameters
     ----------
@@ -79,21 +86,22 @@ def wbt_label_drainage_sides(flow_dir: xr.DataArray, flow_paths: xr.DataArray,
         A raster with each catchment side labeled.
     """
     files = {
-            'temp_flowdir': os.path.join(wbt.work_dir, 'temp_flowdir.tif'),
-            'temp_flowpaths': os.path.join(wbt.work_dir, 'temp_flowpaths.tif'),
-            'hillslopes': os.path.join(wbt.work_dir, 'hillslopes.tif')}
-    flow_dir.rio.to_raster(files['temp_flowdir'])
-    flow_paths.rio.to_raster(files['temp_flowpaths'])
+        "temp_flowdir": os.path.join(
+            wbt.work_dir, f"{wbt.instance_id}-temp_flowdir.tif"
+        ),
+        "temp_flowpaths": os.path.join(
+            wbt.work_dir, f"{wbt.instance_id}-temp_flowpaths.tif"
+        ),
+        "hillslopes": os.path.join(wbt.work_dir, f"{wbt.instance_id}-hillslopes.tif"),
+    }
+    flow_dir.rio.to_raster(files["temp_flowdir"])
+    flow_paths.rio.to_raster(files["temp_flowpaths"])
 
-    wbt.hillslopes(
-            files['temp_flowdir'],
-            files['temp_flowpaths'],
-            files['hillslopes'])
+    wbt.hillslopes(files["temp_flowdir"], files["temp_flowpaths"], files["hillslopes"])
 
-    with rxr.open_rasterio(files['hillslopes'], masked=True) as raster:
+    with rxr.open_rasterio(files["hillslopes"], masked=True) as raster:
         hillslopes = raster.squeeze().copy()
 
-    os.remove(files['temp_flowdir'])
-    os.remove(files['temp_flowpaths'])
+    os.remove(files["temp_flowdir"])
+    os.remove(files["temp_flowpaths"])
     return hillslopes
-

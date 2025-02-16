@@ -41,8 +41,8 @@ def delineate_reaches(
         * hand: Height Above Nearest Drainage
     flowlines: gpd.GeoSeries
         flowlines
-    wbt : WhiteboxTools
-            Initialized WhiteboxTools object
+    wbt : WhiteBoxToolsUnique
+            Initialized WhiteBoxUnique object (utils.WhiteBoxToolsUnique)
     hand_threshold : float
             Maximum elevation above nearest drainage for valley floor delineation
     spacing : float
@@ -305,9 +305,9 @@ def _assign_reach_id(flowpath_cells, bp_cell_ids):
 def flowpath_to_flowlines(flowpath, flowdir, wbt):
     work_dir = wbt.work_dir
     files = {
-        "temp_flowpath": os.path.join(work_dir, "temp_flowpath.tif"),
-        "temp_flowdir": os.path.join(work_dir, "temp_flowdir.tif"),
-        "flowlines": os.path.join(work_dir, "flowlines.shp"),
+        "temp_flowpath": os.path.join(work_dir, f"{wbt.instance_id}-temp_flowpath.tif"),
+        "temp_flowdir": os.path.join(work_dir, f"{wbt.instance_id}-temp_flowdir.tif"),
+        "flowlines": os.path.join(work_dir, f"{wbt.instance_id}-flowlines.shp"),
     }
 
     # for some reason wasn't working without this step
