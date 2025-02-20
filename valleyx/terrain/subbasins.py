@@ -42,7 +42,7 @@ def label_subbasins(
     flow_paths: xr.DataArray
         A raster representing the stream_network, each stream cell is labeled
         by stream_id, non stream cells are 0 or NoData
-    wbt: WhiteboxTools
+    wbt: WhiteboxToolsUnique
         An instance of the WhiteboxTools class
 
     Returns
@@ -55,7 +55,7 @@ def label_subbasins(
     pour_points = _pour_points_from_flowpaths(flow_paths, flow_acc)
 
     work_dir = wbt.work_dir
-    temp_dir = os.path.join(work_dir, "subbasin_temp")
+    temp_dir = os.path.join(work_dir, f"{wbt.instance_id}_subbasin_temp")
     make_dir(temp_dir)
     files = {
         "temp_flowdir": os.path.join(temp_dir, f"{wbt.instance_id}-temp_flowdir.tif"),

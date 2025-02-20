@@ -21,7 +21,7 @@ def label_hillslopes(
     flow_paths: xr.DataArray,
     flow_dir: xr.DataArray,
     subbasins: xr.DataArray,
-    wbt: WhiteboxToolsUnique,
+    wbt: WhiteBoxToolsUnique,
 ) -> xr.DataArray:
     """
     Label the catchment areas draining into the flowpaths. This includes the

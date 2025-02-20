@@ -46,17 +46,17 @@ def start_points(flowlines):
 
 def align_flowlines(flowlines, flow_acc, flow_dir, wbt):
     files = {
-        "seed_points": os.path.join(wbt.working_dir, f"{wbt.instance_id}-sp.shp"),
+        "seed_points": os.path.join(wbt.work_dir, f"{wbt.instance_id}-sp.shp"),
         "snapped_seed_points": os.path.join(
-            wbt.working_dir, f"{wbt.instance_id}-snapped_sp.shp"
+            wbt.work_dir, f"{wbt.instance_id}-snapped_sp.shp"
         ),
-        "flowpaths": os.path.join(wbt.working_dir, f"{wbt.instance_id}-flowpaths.tif"),
+        "flowpaths": os.path.join(wbt.work_dir, f"{wbt.instance_id}-flowpaths.tif"),
         "flowpaths_id": os.path.join(
-            wbt.working_dir, f"{wbt.instance_id}-flowpaths_id.tif"
+            wbt.work_dir, f"{wbt.instance_id}-flowpaths_id.tif"
         ),
-        "flowlines": os.path.join(wbt.working_dir, f"{wbt.instance_id}-flowlines.shp"),
-        "flow_acc": os.path.join(wbt.working_dir, f"{wbt.instance_id}=flow_acc.tif"),
-        "flow_dir": os.path.join(wbt.working_dir, f"{wbt.instance_id}=flow_dir.tif"),
+        "flowlines": os.path.join(wbt.work_dir, f"{wbt.instance_id}-flowlines.shp"),
+        "flow_acc": os.path.join(wbt.work_dir, f"{wbt.instance_id}-flow_acc.tif"),
+        "flow_dir": os.path.join(wbt.work_dir, f"{wbt.instance_id}-flow_dir.tif"),
     }
 
     sps = start_points(flowlines)
@@ -64,7 +64,6 @@ def align_flowlines(flowlines, flow_acc, flow_dir, wbt):
     # save seed points
     sps.to_file(files["seed_points"])
 
-    # save flow_acc and flow_dir
     flow_acc.rio.to_raster(files["flow_acc"])
     flow_dir.rio.to_raster(files["flow_dir"])
 
@@ -104,6 +103,7 @@ def align_flowlines(flowlines, flow_acc, flow_dir, wbt):
     flowlines = flowlines.rename(columns={"STRM_VAL": "streamID"})
 
     flowpaths = rxr.open_rasterio(files["flowpaths_id"], masked=True).squeeze()
+    flowpaths = flowpaths.load()
 
     unique_flowlines = flowlines["streamID"].unique()
     unique_flowpaths = np.unique(flowpaths.values)

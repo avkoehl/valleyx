@@ -16,15 +16,14 @@ def flow_accumulation_workflow(dem, wbt):
     """
     work_dir = wbt.work_dir
     names = [
-        f"{wbt.instance_id}-temp",
-        f"{wbt.instance_id}-conditioned_dem",
-        f"{wbt.instance_id}-flow_dir",
-        f"{wbt.instance_id}-flow_acc",
+        "temp",
+        "conditioned_dem",
+        "flow_dir",
+        "flow_acc",
     ]
-    fnames = [os.path.join(work_dir, name + ".tif") for name in names]
+    fnames = [os.path.join(work_dir, f"{wbt.instance_id}-{name}.tif") for name in names]
     files = {name: file for name, file in zip(names, fnames)}
 
-    created_files = []
     dem.rio.to_raster(files["temp"])
     try:
         wbt.fill_depressions(
@@ -52,18 +51,21 @@ def flow_accumulation_workflow(dem, wbt):
         )
 
     except Exception as e:
-        raise RuntimeError(f"Unexpected error in flow accumulation workflow: {e}")
-
-    finally:
-        for file in created_files:
+        for file in fnames:
             if os.path.exists(file):
                 os.remove(file)
+        raise RuntimeError(f"Unexpected error in flow accumulation workflow: {e}")
+
     # load the files
     with rxr.open_rasterio(files["conditioned_dem"], masked=True) as src:
-        conditioned = src.squeeze()
+        conditioned = src.squeeze().load()
     with rxr.open_rasterio(files["flow_dir"], masked=True) as src:
-        flow_dir = src.squeeze()
+        flow_dir = src.squeeze().load()
     with rxr.open_rasterio(files["flow_acc"], masked=True) as src:
-        flow_acc = src.squeeze()
+        flow_acc = src.squeeze().load()
+
+    for file in fnames:
+        if os.path.exists(file):
+            os.remove(file)
 
     return conditioned, flow_dir, flow_acc

@@ -11,7 +11,7 @@ from pysheds._sgrid import _dinf_hand_iter_numba
 from pysheds._sgrid import _assign_hand_heights_numba
 from pysheds._sgrid import _mfd_hand_iter_numba
 
-from valleysx.utils import WhiteBoxToolsUnique
+from valleyx.utils import WhiteBoxToolsUnique
 
 
 def channel_relief(
