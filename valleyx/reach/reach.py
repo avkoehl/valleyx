@@ -29,7 +29,15 @@ def delineate_reaches(basin, ta, hand_threshold, spacing, minsize, window):
     vbs = valley_bottoms(basin.flowlines, basin.subbasins, basin.hand, hand_threshold)
 
     logger.debug("Split segments into reaches")
-    # returns pour points
+    for stream_segment_id:
+        bottom = 
+        centerline = 
+        pour_points = 
+
+    # form pour points compute subbasins and hillslopes
+
+
+    fpcells, fp_points = reach_pour_points()
     result = reach_subbasins(
         vfs,
         dataset["flow_path"],
