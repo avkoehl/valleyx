@@ -4,20 +4,22 @@ from scipy.ndimage import binary_fill_holes
 
 from valleyx.raster.vectorize import single_polygon_from_binary_raster
 
-def rough_out_hand(flowlines, subbasins, hand, threshold):
+
+def valley_bottoms(flowlines, subbasins, hand, threshold):
     stream_ids = np.unique(flowlines.index)
     stream_ids = stream_ids[~np.isnan(stream_ids)]
 
-    floors = []
+    bottoms = []
     for stream in stream_ids:
-        # valley floor
         cropped_hand = hand.where(subbasins == stream, drop=True)
         threshold_hand = cropped_hand < threshold
         threshold_hand.data = binary_fill_holes(threshold_hand.data)
-        valley_floor = single_polygon_from_binary_raster(threshold_hand, min_percent_area=90)
-        floors.append((stream, valley_floor))
+        valley_bottom = single_polygon_from_binary_raster(
+            threshold_hand, min_percent_area=90
+        )
+        bottoms.append((stream, valley_bottom))
 
-    index, floors = zip(*floors)
-    valley_floors = gpd.GeoSeries(floors, index=index, crs=hand.rio.crs)
+    index, bottoms = zip(*bottoms)
+    valley_bottoms = gpd.GeoSeries(bottoms, index=index, crs=hand.rio.crs)
 
-    return valley_floors
+    return valley_bottoms

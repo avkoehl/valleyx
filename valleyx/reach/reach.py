@@ -1,200 +1,258 @@
-"""
-This module identifies river reaches based on a valley width perspective.
+import os
 
-Each reach, in this case, is a length of the river that has a relatively homogenous valley floor width.
-Reaches are then optionally grouped together based on classifications of valley floor width:
-    classes:
-        median_width > 300 -> plain (e.g. alluvial valley, estuary, tectonically formed basin...)
-        median_width > 100 -> unconfined
-        median_width > 50  -> partly-confined 
-        median_width <= 50 -> confined
-
-Inputs are a valley floor polygon, valley floor polygon centerline, and the river's flowline
-
-See centerline.py for how to get the centerline of a polygon
-Valley floor polygon can be naively approximated by taking HAND <= 10m
-
-steps:
-    generate width series (width of lines perpendicular to centerline where they intersect the valley floor polygon bounds)
-    find breakpoints in width series (change point detection algorithm)
-    group segments (remove small segments, group into classes described above)
-
-input:
-    valley_floor (rough_out.py)
-    centerline (valley_centerline.py)
-    flowline
-
-output:
-    pour_points gpd.GeoSeries (points along the flowline that represent a break in the width series
-"""
-import geopandas as gpd
 import numpy as np
 import pandas as pd
-import ruptures as rpt
+import geopandas as gpd
 from shapely.geometry import Point
-from shapely.ops import nearest_points
+from loguru import logger
 
-from valleyx.geometry.width import polygon_widths
+from valleyx.geometry.centerline import polygon_centerline
+from valleyx.reach.valley_bottoms import valley_bottoms
+from valleyx.reach.reach import segment_reaches
 
-def segment_reaches(valley_floor, centerline, flowline, spacing, window, minsize):
-    if centerline.length < minsize:
-        return None
+logger.bind(module="delineate_reaches")
 
-    widths = polygon_widths(valley_floor, centerline, spacing=spacing)
-    if (len(widths) * spacing) < minsize:
-        return None
 
-    widths = _series_to_segments(widths, centerline, window=window, minsize=minsize)
-    bp_inds = _change_point_inds(widths)
+def delineate_reaches(basin, ta, hand_threshold, spacing, minsize, window):
+    """
+    hand_threshold : float
+            Maximum elevation above nearest drainage for valley floor delineation
+    spacing : float
+            Spacing in distance to sample width measurements at
+    minsize : float
+            Minimum reach length
+    window : int
+            Window size for smoothing the width series in number of samples
+    """
+    logger.info("Starting delineate reaches processing")
+    logger.debug("estimate valley bottoms")
+    vbs = valley_bottoms(basin.flowlines, basin.subbasins, basin.hand, hand_threshold)
 
-    if len(bp_inds) == 0:
-        return None
+    logger.debug("Split segments into reaches")
+    # returns pour points
+    result = reach_subbasins(
+        vfs,
+        dataset["flow_path"],
+        flowlines,
+        dataset["flow_acc"],
+        dataset["flow_dir"],
+        wbt,
+        500,
+        spacing,
+        minsize,
+        window,
+    )
 
-    # get points along flowlines
-    ppts = _pour_points(bp_inds, widths, flowline)
-    return ppts
+    logger.debug(f"Number of flowline segments: {len(flowlines)}")
+    logger.debug(f"Number of reaches: {len(result['flowlines_reaches'])}")
+    logger.success("Delineate reaches successfully completed")
+    return result["flowlines_reaches"], dataset
 
-# -- internal
-def _series_to_segments(widths, centerline, window, minsize):
-    bp_inds = _breakpoint_inds(widths['width'], window=window)
-    widths = _add_segment_id_column(bp_inds, widths)
-    widths = _group_segments(widths)
-    widths = _filter_small(widths, centerline, minsize=minsize)
-    return widths
 
-def _pour_points(bp_inds, widths, flowline):
-    points = widths.iloc[bp_inds]
-    nearest = [nearest_points(flowline, bp)[0] for bp in points['center_point']]
-    # TODO: improve this to use the cross section line intersection first
-    # if multipoint pick the point nearest to the center_point
-    return gpd.GeoSeries(nearest, crs=widths.crs)
+def reach_subbasins(
+    valley_floors,
+    flowpaths,
+    flowlines,
+    flow_acc,
+    flow_dir,
+    wbt,
+    num_points,
+    spacing,
+    minsize,
+    window,
+):
+    fpcells, _, flowpath_points = _compute_reaches(
+        valley_floors,
+        flowpaths,
+        flowlines,
+        flow_acc,
+        num_points,
+        spacing,
+        minsize,
+        window,
+    )
+    logger.debug("Label flowlines and flowpaths")
+    flowpaths_reaches = _relabel_flowpaths(fpcells, flowpaths)
+    flowlines_reaches = flowpath_to_flowlines(flowpaths_reaches, flow_dir, wbt)
+    flowlines_reaches = flowlines_reaches.rename(columns={"STRM_VAL": "streamID"})
+    flowlines_reaches = flowlines_reaches[["streamID", "geometry"]]
+    flowlines_reaches = flowlines_reaches.sort_values(by="streamID")
+    reaches = gpd.GeoSeries(flowlines_reaches["geometry"])
+    reaches.index = flowlines_reaches["streamID"]
+    reaches.crs = flowpaths.rio.crs
+    flowlines_reaches = reaches
+    logger.debug("Compute subbasins and hillslopes")
+    subbasins = _reach_subbasins(flowpath_points, flowpaths_reaches, flow_dir, wbt)
+    hillslopes = _reach_hillslopes(subbasins, flowpaths_reaches, flow_dir, wbt)
+    return {
+        "flowpaths_reaches": flowpaths_reaches,
+        "flowlines_reaches": flowlines_reaches,
+        "subbasins": subbasins,
+        "hillslopes": hillslopes,
+    }
 
-def _change_point_inds(widths):
-    condition = widths['segment_id'].diff() != 0
-    condition.iat[0] = False
-    return np.where(condition)[0]
 
-def _group_segments(width_series_df):
-    # for each segment get median width
-   def get_group(x):
-       if x > 300:
-           return 'plain'
-       if x > 100:
-           return 'unconfined'
-       if x > 50:
-           return 'partly-unconfined'
-       else:
-           return 'confined'
+def _compute_reaches(
+    valley_floors, flowpaths, flowlines, flow_acc, num_points, spacing, minsize, window
+):
+    all_flowpath_cells = gpd.GeoDataFrame()
+    all_points = gpd.GeoDataFrame()
+    all_points_snapped = gpd.GeoDataFrame()
+    count = 0
+    for ID, valley_floor in valley_floors.items():
+        count += 1
+        percent = round(count / len(valley_floors) * 100, 2)
+        if ID not in flowlines.index.values:
+            continue
+        flowpath = flowpaths.where(flowpaths == ID, drop=False)
+        flowline = flowlines.loc[ID]
 
-   segments = width_series_df[['segment_id', 'width']].groupby("segment_id").median()
-   segments = segments.reset_index()
-   segments['group'] = segments['width'].apply(get_group)
+        source = Point(flowline.coords[0])
+        target = Point(flowline.coords[-1])
+        centerline = polygon_centerline(
+            valley_floor,
+            num_points=num_points,
+            source=source,
+            target=target,
+            simplify_tolerance=5,
+            dist_tolerance=100,
+            smooth_output=True,
+        )
+        # something went wrong in computing the centerline, just default to the flowline
+        if centerline is None:
+            centerline = flowline
 
-   to_drop = []
-   for i, row in enumerate(segments.iterrows()):
-      row = row[1]
-      if i == len(segments) - 1:
-          break
+        flowpath_cells = _flowpath_cells(flowpath, flow_acc)
 
-      current_group = row['group']
-      next_group = segments.iloc[i+1]['group']
-      if current_group == next_group:
-         to_drop.append(row['segment_id'])
+        points = segment_reaches(
+            valley_floor, centerline, flowline, spacing, window, minsize
+        )
 
-   df = _update_segment_id_column(width_series_df, to_drop)
-   return df
-
-def _breakpoint_inds(series, pen=10, window=5):
-    signal = series.rolling(window=window, center=True).mean().fillna(series).values
-    algo = rpt.Pelt(model='rbf').fit(signal)
-    result = algo.predict(pen=pen)
-    result = result[0:-1] # since last value is just the number of observations
-    return result
-
-def _add_segment_id_column(bp_inds, width_series_df):
-    width_series_df['segment_id'] = -1
-    
-    current_segment = 1
-    for i in range(width_series_df.shape[0]):
-        if i in bp_inds:
-            current_segment = current_segment + 1
-        width_series_df['segment_id'].iat[i] = current_segment
-    return width_series_df
-
-def _update_segment_id_column(width_series_df, ids_to_remove):
-    # if a segment is removed, all of its members are added to the next segment id
-    # segment ids are renamed from 1 to number of segments
-    new_df = width_series_df.copy()
-    if isinstance(ids_to_remove, int):
-        ids_to_remove = [ids_to_remove]
-        
-    for segment_id in ids_to_remove:
-        unique_segments = new_df['segment_id'].dropna().unique()
-        unique_segments = pd.Series(unique_segments).sort_values()
-
-        if len(unique_segments) == 1:
-            break
-
-        if segment_id == unique_segments.iloc[-1]:
-            # high to low
-            htl = unique_segments.sort_values(ascending=False)
-            to_attach = htl.iloc[np.argmax(htl < segment_id)]
-            new_df.loc[new_df['segment_id'] == segment_id, "segment_id"] = to_attach
-
+        if points is not None:
+            snapped_points = _snap_to_flowpath(points, flowpath_cells)
+            snapped_points = pd.concat(
+                [snapped_points, flowpath_cells.iloc[[-1]]], ignore_index=True
+            )
+            points = pd.concat([points, gpd.GeoSeries(target)], ignore_index=True)
         else:
-            to_attach = unique_segments.iloc[np.argmax(unique_segments > segment_id)]
-            new_df.loc[new_df['segment_id'] == segment_id, "segment_id"] = to_attach
+            snapped_points = flowpath_cells.iloc[[-1]]
+            points = gpd.GeoSeries(target, crs=flow_acc.rio.crs)
 
-    # update segment_ids to be from 1 to nsegments
-    for i,u in enumerate(new_df['segment_id'].unique()):
-        new_df.loc[new_df['segment_id'] == u, "segment_id"] = i+1
+        flowpath_cells = _assign_reach_id(flowpath_cells, snapped_points["cell_id"])
+        all_flowpath_cells = pd.concat(
+            [all_flowpath_cells, flowpath_cells], ignore_index=True
+        )
+        all_points_snapped = pd.concat(
+            [all_points_snapped, snapped_points], ignore_index=True
+        )
 
-    return new_df
+        points_df = gpd.GeoDataFrame(points, columns=["geometry"], crs=flowlines.crs)
+        points_df["segment_id"] = ID
+        all_points = pd.concat([all_points, points_df], ignore_index=True)
+        num_reaches = len(points_df)
+        logger.debug(
+            f"split {ID} into {num_reaches} reaches, {count}/{len(valley_floors)} {percent}"
+        )
+    return all_flowpath_cells, all_points, all_points_snapped
 
-def _segment_lengths(width_series_df, centerline):
-    # for each segment get its length
-    # true start point of any segment is the last point of the last segment
-    lengths = []
-    ids = []
-    for segment_id in width_series_df['segment_id'].unique():
-        rows = width_series_df.loc[width_series_df['segment_id'] == segment_id]
-        if segment_id == 1:
-            start = centerline.project(rows['center_point'].iloc[0])
-            end = centerline.project(rows['center_point'].iloc[-1])
-            lengths.append(end-start)
-            ids.append(segment_id)
-        else:
-            start = centerline.project(width_series_df.loc[width_series_df['segment_id'] == (segment_id -1)].iloc[-1]['center_point'])
-            end = centerline.project(rows['center_point'].iloc[-1])
-            lengths.append(end-start)
-            ids.append(segment_id)
-    
-    sdf = pd.DataFrame({'segment_id': ids, 'length': lengths})
-    return sdf
 
-def _cascade_filter_id_segments(sdf, minsize):
-    remove_segments = []
-    new_values = []
-    to_add = 0
-    value = 0
-    
-    for _, row in sdf.iterrows():
-        value = row['length']
-        value = value + to_add
-    
-        if value < minsize:
-            remove_segments.append(row['segment_id'])
-            to_add = value
-        else:
-            to_add = 0
-            new_values.append(value)
-    
-    if to_add > 0:
-        new_values.append(value)
-    return remove_segments
-    
-def _filter_small(width_series_df, centerline, minsize):
-    sdf = _segment_lengths(width_series_df, centerline)
-    to_remove = _cascade_filter_id_segments(sdf, minsize)
-    df = _update_segment_id_column(width_series_df, to_remove)
-    return df
+def _relabel_flowpaths(flowpath_cells, flowpaths):
+    # relabel flowpaths
+    new_fp = flowpaths.copy()
+    new_fp.data = np.full(flowpaths.shape, np.nan, dtype=flowpaths.dtype)
+    flowpath_cells["label"] = (
+        flowpath_cells["segment_id"] * 100 + flowpath_cells["reach_id"]
+    ).astype(int)
+    for label, inds in flowpath_cells.groupby("label").groups.items():
+        rows = flowpath_cells["row"].loc[inds].values
+        cols = flowpath_cells["col"].loc[inds].values
+        new_fp.values[rows, cols] = label
+    return new_fp
+
+
+def _snap_to_flowpath(points, flowpath_cells):
+    """
+    points gpd.GeoSeries
+    return
+       gdp.GeoDataFrame points row, col, cell_id, geometry
+    """
+    locs = []
+    for point in points:
+        dists = flowpath_cells.distance(point)
+        locs.append(dists.idxmin())
+
+    return flowpath_cells.loc[locs]
+
+
+def _flowpath_cells(flowpath_mask, flowacc):
+    """
+    for each cell in flowpath get the flow accumulation, its id, its coordinate, its x, its y
+    sort by flowacc
+    """
+    condition = np.isfinite(flowpath_mask)
+
+    id_grid = np.arange(flowpath_mask.size).reshape(flowpath_mask.shape)
+    stream_points = id_grid[condition]
+    fa_values = flowacc.data[condition]
+    rows, cols = np.where(condition)
+    # notice y,x are swapped. not sure if this is always the case with the rasterarrays, but don't want to think about it too much right now
+    coordinates = [
+        Point(condition.rio.transform() * (y, x)) for x, y in zip(rows, cols)
+    ]
+
+    df = gpd.GeoDataFrame(
+        {
+            "segment_id": np.unique(flowpath_mask.data[condition]).item(),
+            "cell_id": stream_points,
+            "flow_acc": fa_values,
+            "geometry": coordinates,
+            "row": rows,
+            "col": cols,
+        },
+        geometry="geometry",
+        crs=flowpath_mask.rio.crs,
+    )
+
+    return df.sort_values("flow_acc")
+
+
+def _assign_reach_id(flowpath_cells, bp_cell_ids):
+    reach_ids = []
+    reach = 0
+    for cell_id in flowpath_cells["cell_id"]:
+        reach_ids.append(reach)
+        if cell_id in bp_cell_ids.values:
+            reach += 1
+
+    flowpath_cells["reach_id"] = reach_ids
+    return flowpath_cells
+
+
+def flowpath_to_flowlines(flowpath, flowdir, wbt):
+    work_dir = wbt.work_dir
+    files = {
+        "temp_flowpath": os.path.join(work_dir, f"{wbt.instance_id}-temp_flowpath.tif"),
+        "temp_flowdir": os.path.join(work_dir, f"{wbt.instance_id}-temp_flowdir.tif"),
+        "flowlines": os.path.join(work_dir, f"{wbt.instance_id}-flowlines.shp"),
+    }
+
+    # for some reason wasn't working without this step
+    fp = flowpath.copy()
+    fp = fp.where(~np.isnan(fp), -9999)
+    fp = fp.astype(np.int32)
+    fp = fp.rio.write_nodata(-9999)
+
+    fp.rio.to_raster(files["temp_flowpath"])
+    flowdir.rio.to_raster(files["temp_flowdir"])
+
+    wbt.raster_streams_to_vector(
+        files["temp_flowpath"],
+        files["temp_flowdir"],
+        files["flowlines"],
+    )
+
+    os.remove(files["temp_flowpath"])
+    os.remove(files["temp_flowdir"])
+
+    flowlines = gpd.read_file(files["flowlines"])
+    return flowlines
