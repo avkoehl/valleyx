@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import rioxarray as rxr
 
 
@@ -19,7 +20,6 @@ class TerrainAnalyzer:
     def cleanup_files(files):
         for file in files.values():
             if os.path.exists(file):
-                # if shapefile, remove all associated files
                 if file.endswith(".shp"):
                     for ext in [".dbf", ".prj", ".shx", ".cpg"]:
                         associated_file = file.replace(".shp", ext)
@@ -28,7 +28,9 @@ class TerrainAnalyzer:
                 os.remove(file)
 
     def construct_fname(self, name, ext):
-        return str(Path(self.wbt.work_dir) / f"{self.prefix}-{name}.{ext}")
+        base = Path(self.wbt.work_dir)
+        full = base / f"{self.prefix}-{name}.{ext}"
+        return str(full.absolute())
 
     def create_temp_raster_paths(self, names):
         return {name: self.construct_fname(name, "tif") for name in names}
@@ -43,9 +45,17 @@ class TerrainAnalyzer:
         dem.rio.to_raster(manifest["dem"])
 
         try:
-            self.wbt.fill_depressions(manifest["dem"], manifest["cdem"])
+            self.wbt.fill_depressions(
+                manifest["dem"],
+                manifest["cdem"],
+                fix_flats=True,
+                flat_increment=None,
+                max_depth=None,
+            )
             self.wbt.d8_pointer(manifest["cdem"], manifest["flow_dir"])
-            self.wbt.d8_flow_accumulation(manifest["flow_dir"], manifest["flow_acc"])
+            self.wbt.d8_flow_accumulation(
+                manifest["cdem"], manifest["flow_acc"], log=False, out_type="cells"
+            )
 
             conditioned = TerrainAnalyzer.load_raster(manifest["cdem"])
             flow_dir = TerrainAnalyzer.load_raster(manifest["flow_dir"])
@@ -91,6 +101,8 @@ class TerrainAnalyzer:
         for key, value in mapping.items():
             subbasins.data[subbasins.data == key] = value
 
+        subbasins = subbasins.rio.write_nodata(np.nan)
+        subbasins = subbasins.astype(np.float32)
         return subbasins
 
     def hillslopes(self, flow_dir, flow_paths):
@@ -142,6 +154,25 @@ class TerrainAnalyzer:
         finally:
             TerrainAnalyzer.cleanup_files(manifest)
         return slope, curvature
+
+    def flowpaths_to_flowlines(self, flow_paths, flow_dir):
+        rasters = self.create_temp_raster_paths(["flowpaths", "flowdir"])
+        vectors = self.create_temp_vector_paths(["flowlines"])
+        manifest = {**rasters, **vectors}
+
+        flow_paths.rio.to_raster(manifest["flowpaths"])
+        flow_dir.rio.to_raster(manifest["flowdir"])
+
+        try:
+            self.wbt.raster_streams_to_vector(
+                manifest["flowpaths"], manifest["flowdir"], manifest["flowlines"]
+            )
+            flowlines = gpd.read_file(manifest["flowlines"])
+        except Exception as e:
+            raise ValueError(f"Error in flowpaths to flowlines workflow: {e}") from e
+        finally:
+            TerrainAnalyzer.cleanup_files(manifest)
+        return flowlines
 
     def trace_flowpaths(self, flow_dir, flow_acc, channel_heads, snap_dist):
         rasters = self.create_temp_raster_paths(

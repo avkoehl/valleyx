@@ -1,26 +1,26 @@
 """
-This module identifies river reaches based on a valley width perspective.
+This module identifies river reaches based on a valley bottom width perspective.
 
-Each reach, in this case, is a length of the river that has a relatively homogenous valley floor width.
-Reaches are then optionally grouped together based on classifications of valley floor width:
+Each reach, in this case, is a length of the river that has a relatively homogenous valley bottom width.
+Reaches are then optionally grouped together based on classifications of valley bottom width:
     classes:
         median_width > 300 -> plain (e.g. alluvial valley, estuary, tectonically formed basin...)
         median_width > 100 -> unconfined
         median_width > 50  -> partly-confined
         median_width <= 50 -> confined
 
-Inputs are a valley floor polygon, valley floor polygon centerline, and the river's flowline
+Inputs are a valley bottom polygon, valley bottom polygon centerline, and the river's flowline
 
 See centerline.py for how to get the centerline of a polygon
-Valley floor polygon can be naively approximated by taking HAND <= 10m
+Valley bottom polygon can be naively approximated by taking HAND <= 10m
 
 steps:
-    generate width series (width of lines perpendicular to centerline where they intersect the valley floor polygon bounds)
+    generate width series (width of lines perpendicular to centerline where they intersect the valley bottom polygon bounds)
     find breakpoints in width series (change point detection algorithm)
     group segments (remove small segments, group into classes described above)
 
 input:
-    valley_floor (rough_out.py)
+    valley_bottom (rough_out.py)
     centerline (valley_centerline.py)
     flowline
 
@@ -33,30 +33,68 @@ import numpy as np
 import pandas as pd
 import ruptures as rpt
 from shapely.ops import nearest_points
+from shapely.geometry import Point
 
 from valleyx.geometry.width import polygon_widths
+from valleyx.raster.raster_utils import pixel_to_point
+from valleyx.utils import translate_to_wbt
 
 
-def segment_reaches(valley_floor, centerline, flowline, spacing, window, minsize):
+def segment_reaches(
+    valley_bottom,
+    centerline,
+    flowline,
+    flowpath_mask,
+    flowacc,
+    spacing,
+    window,
+    minsize,
+):
+    outlet = _get_outlet_point(flowacc.where(flowpath_mask))
+
     if centerline.length < minsize:
-        return None
+        return outlet
 
-    widths = polygon_widths(valley_floor, centerline, spacing=spacing)
+    widths = polygon_widths(valley_bottom, centerline, spacing=spacing)
     if (len(widths) * spacing) < minsize:
-        return None
+        return outlet
 
     widths = _series_to_segments(widths, centerline, window=window, minsize=minsize)
     bp_inds = _change_point_inds(widths)
 
     if len(bp_inds) == 0:
-        return None
-
-    # get points along flowlines
-    ppts = _pour_points(bp_inds, widths, flowline)
-    return ppts
+        return outlet
+    else:
+        ppts = _pour_points(bp_inds, widths, flowline)
+        ppts = _snap_to_flowpath(flowpath_mask, ppts)
+        ppts = pd.concat([ppts, outlet])
+        return ppts
 
 
 # -- internal
+def _snap_to_flowpath(flowpath, points):
+    frame = flowpath.to_dataframe(name="value")
+    frame = frame.reset_index()
+    frame = frame.loc[frame["value"]]
+    geometry = [Point(x, y) for x, y in zip(frame["x"], frame["y"])]
+    series = gpd.GeoSeries(geometry, crs=points.crs)
+
+    snapped_points = []
+    for point in points:
+        dists = series.distance(point)
+        snapped_points.append(series.iloc[dists.idxmin()])
+    series = gpd.GeoSeries(snapped_points, crs=flowpath.rio.crs)
+    return series
+
+
+def _get_outlet_point(flowacc):
+    row, col = np.unravel_index(flowacc.argmax(), flowacc.shape)
+    point = pixel_to_point(flowacc, row, col)
+    series = gpd.GeoSeries(point, crs=flowacc.rio.crs)
+    series = translate_to_wbt(series, flowacc.rio.resolution())
+    return series
+
+
 def _series_to_segments(widths, centerline, window, minsize):
     bp_inds = _breakpoint_inds(widths["width"], window=window)
     widths = _add_segment_id_column(bp_inds, widths)

@@ -24,7 +24,7 @@ def pour_points_from_flowpaths(
         fa_values = np.where(stream_mask, flow_acc.values, np.nan)
         max_idx = np.unravel_index(np.nanargmax(fa_values), fa_values.shape)
         row, col = max_idx
-        pour_point = pixel_to_point(flow_paths, row, col)
+        pour_point = pixel_to_point(flow_paths, int(row), int(col))
         pour_points_list.append(pour_point)
 
     pour_points = gpd.GeoSeries(pour_points_list, crs=flow_paths.rio.crs)
@@ -42,7 +42,7 @@ def prep_flowlines(flowlines, flow_acc):
     flowlines = flowlines.reset_index(drop=True)
     flowlines = flowlines.rename(columns={"STRM_VAL": "streamID"})
     flowlines = gpd.GeoSeries(
-        flowlines["geometry"].values, index=flowlines["streamID"], crs=flowlines.crs
+        flowlines["geometry"].values, index=flowlines["streamID"], crs=flow_acc.rio.crs
     )
     return flowlines
 
