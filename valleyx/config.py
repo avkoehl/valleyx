@@ -35,6 +35,7 @@ class ValleyConfig:
     min_points: int
     percentile: float
     max_floor_slope: Optional[float] = None
+    default_threshold: Optional[float] = None
 
     @classmethod
     def from_dict(cls, config_dict: dict):

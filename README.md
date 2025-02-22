@@ -2,6 +2,10 @@
 
 `valleyx` is a python package for extracting valley floors from digital elevation models.
 
+Combines two approaches:
+1. low slope areas connected to the flowlines
+2. elevation above stream thresholding 
+
 ![map of extracted valley floor](/examples/img/result.png)
 
 ## Installation
@@ -36,13 +40,18 @@ poetry install --with dev
 Import and use the modules in your python code:
 
 ```python
+import geopandas as gpd
+import rioxarray as rxr
+
 from valleyx import ValleyConfig
 from valleyx import extract_valleys
-from valleyx.utils import setup_wbt
-from valleyx.utils import load_input
+from valleyx.wbt import setup_wbt
+
+dem = rxr.open_rasterio(dem_file_path, masked=True).squeeze()
+flowlines = gpd.read_file(flowlines_file_path)
 
 dem, flowlines = load_input(dem_file_path, flowlines_file_path)
-wbt = setup_wbt(working_directory_path) # make sure directory exists
+wbt = setup_wbt(working_directory_path, verbose=False, max_procs=1) 
 config = ValleyConfig(
     # Reach delineation params
     hand_threshold=10,
@@ -69,7 +78,8 @@ config = ValleyConfig(
     buffer=1,
     min_points=15,
     percentile=0.80,
-    max_floor_slope=14
+    max_floor_slope=14,
+    default_threshold=5,
 )
 
 results = extract_valleys(dem, flowlines, wbt, config)
@@ -87,57 +97,6 @@ poetry run python -m valleyx -h
 python -m valleyx -h
 ```
 
-## File Structure
-```
-./
-    __init__.py - Package initialization
-    __main__.py - Entry point of the package
-    core.py - Core functionality
-    flow_analysis.py - Flow analysis logic
-    label_floors.py - Floor labeling and classification
-    reach_delineation.py - River reach segmentation logic
-    utils.py - Shared utility functions
-    wall_detection.py - Wall point detection logic
-
-    floor/
-        connect.py - Floor connectivity analysis
-        foundation.py - Base floor processing
-
-    geometry/
-        centerline.py - Centerline extraction algorithm
-        cross_section.py - Cross-sectional analysis tools
-        geom_utils.py - Shapely utility functions
-        width.py - Width calculation methods on polygons
-
-    max_ascent/
-        classify_profile_max_ascent.py - Profile classification based on maximum ascent
-        max_ascent.py - Maximum ascent calculation algorithms
-
-    profile/
-        classify_profile.py - General profile classification
-        convert_wp.py - Post Processing for detected wall points
-        network_xsections.py - Network cross-section analysis
-        preprocess_profile.py - Profile preprocessing functions
-        split.py - Profile splitting utilities
-
-    raster/
-        raster_utils.py - Raster processing utilities
-        vectorize.py - Raster to vector conversion
-
-    reach/
-        reach.py - Reach analysis core functionality
-        rough_out.py - Initial reach estimation
-
-    terrain/
-        align_flowlines.py - Flowline alignment with terrain
-        cost.py - Cost surface calculations
-        flow_acc.py - Flow accumulation algorithms
-        flow_dir.py - Flow direction analysis
-        hand.py - Height Above Nearest Drainage calculations
-        hillslopes.py - Hillslope delineation
-        subbasins.py - Sub-basin delineation
-        surface.py - Surface analysis utilities
-```
 ## Contact
 
 Arthur Koehl  

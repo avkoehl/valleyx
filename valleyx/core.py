@@ -1,28 +1,68 @@
+# valleyx/core.py
+"""Core workflow for valley floor extraction."""
+
+import geopandas as gpd
+import numpy as np
 from loguru import logger
+from typing import Optional
+import whitebox
+import xarray as xr
 
-from valleyx.flow_analysis import flow_analysis
-from valleyx.reach_delineation import delineate_reaches
-from valleyx.wall_detection import detect_wallpoints
-from valleyx.label_floors import label_floors
+from valleyx.config import ValleyConfig
+from valleyx.flow.flow import flow_analysis
+from valleyx.reach.reach import delineate_reaches
+from valleyx.floor.floor import label_floors
+from valleyx.terrain_analyzer import TerrainAnalyzer
 
-logger.bind(module="core")
 
+def extract_valleys(
+    dem: xr.DataArray,
+    flowlines: gpd.GeoSeries,
+    wbt: whitebox.WhiteboxTools,
+    config: ValleyConfig,
+    prefix: Optional[str] = None,
+) -> xr.DataArray:
+    """
+    Extract valley floors complete workflow
 
-def extract_valleys(dem, flowlines, wbt, config):
-    logger.info("Running extract valleys workflow")
-    flowlines, dataset = flow_analysis(dem, flowlines, wbt)
-    flowlines, dataset = delineate_reaches(
-        dataset,
-        flowlines,
-        wbt,
-        config.hand_threshold,
-        config.spacing,
-        config.minsize,
-        config.window,
+    Parameters
+    ----------
+    dem : xarray.DataArray
+        Digital elevation model
+    flowlines : geopandas.GeoSeries
+        Stream network as GeoSeries of LineString geometries
+    wbt : WhiteboxTools
+        Initialized WhiteboxTools instance
+    config : dict
+        Configuration parameters
+    prefix : str, optional
+        Prefix for temporary files
+
+    Returns
+    -------
+    xr.DataArray
+        Raster with valley floors labeled
+    """
+    logger.info("Starting valley extraction workflow")
+
+    # Initialize terrain analyzer
+    ta = TerrainAnalyzer(wbt, prefix)
+
+    # Run analysis stages
+    logger.info("Running flow analysis")
+    basin = flow_analysis(dem, flowlines, ta)
+
+    logger.info("Delineating reaches")
+    basin = delineate_reaches(
+        basin, ta, config.hand_threshold, config.spacing, config.minsize, config.window
     )
-    wallpoints = detect_wallpoints(
-        dataset,
-        flowlines,
+
+    logger.info("Detecting valley floors")
+    basin = label_floors(
+        basin,
+        ta,
+        config.max_floor_slope,
+        config.foundation_slope,
         config.sigma,
         config.line_spacing,
         config.line_width,
@@ -34,17 +74,11 @@ def extract_valleys(dem, flowlines, wbt, config):
         config.min_distance,
         config.num_cells,
         config.slope_threshold,
-        wbt,
-    )
-    floor = label_floors(
-        wallpoints,
-        dataset,
-        config.max_floor_slope,
-        config.foundation_slope,
         config.buffer,
         config.min_points,
         config.percentile,
+        config.default_threshold,
     )
-    logger.success("Finished extract valleys workflow")
 
-    return {"floor": floor, "flowlines": flowlines, "wallpoints": wallpoints}
+    logger.success("Valley extraction workflow completed")
+    return basin

@@ -1,15 +1,16 @@
 import argparse
+import os
+import shutil
 import sys
 import toml
-import shutil
 
+import geopandas as gpd
 from loguru import logger
+import rioxarray as rxr
 
 from valleyx.core import extract_valleys
 from valleyx.core import ValleyConfig
-from valleyx.utils import setup_wbt
-from valleyx.utils import make_dir
-from valleyx.utils import load_input
+from valleyx.wbt import setup_wbt
 
 
 def setup_logging(enable_logging, log_file):
@@ -32,8 +33,6 @@ if __name__ == "__main__":
     parser.add_argument("--working_dir", type=str, required=True)
     parser.add_argument("--param_file", type=str, required=True)
     parser.add_argument("--floor_ofile", type=str, required=True)
-    parser.add_argument("--flowlines_ofile", type=str, default=None)
-    parser.add_argument("--wp_ofile", type=str, default=None)
     parser.add_argument("--enable_logging", action="store_true")  # false if not set
     parser.add_argument("--log_file", type=str, default=None)
     args = parser.parse_args()
@@ -41,21 +40,18 @@ if __name__ == "__main__":
     setup_logging(args.enable_logging, args.log_file)
 
     wbt = setup_wbt(args.working_dir, verbose=False, max_procs=1)
-    dem, flowlines = load_input(args.dem_file, args.flowlines_file)
+    dem = rxr.open_rasterio(args.dem_file, masked=True).squeeze()
+    flowlines = gpd.read_file(args.flowlines_file)
     params = toml.load(args.param_file)
 
     config = ValleyConfig.from_dict(params)
 
-    make_dir(args.working_dir, remove_existing=True)
+    if os.path.exists(args.working_dir):
+        shutil.rmtree(args.working_dir)
+    os.makedirs(args.working_dir)
 
     results = extract_valleys(dem, flowlines, wbt, config)
 
-    results["floor"].rio.to_raster(args.floor_ofile)
-
-    if args.flowlines_ofile:
-        results["flowlines"].to_file(args.flowlines_ofile)
-
-    if args.wp_ofile:
-        results["wallpoints"].to_file(args.wp_ofile)
+    results.rio.to_raster(args.floor_ofile)
 
     shutil.rmtree(args.working_dir)
