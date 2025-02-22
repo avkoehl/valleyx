@@ -4,8 +4,8 @@ Returns a dataframe of width measurements for a given polygon and its centerline
 
 import geopandas as gpd
 
-from valleyx.geometry.cross_section import get_cross_section_lines
-from valleyx.geometry.geom_utils import get_length_and_width
+from valleyx.tools.cross_section import get_cross_section_lines
+from valleyx.utils.geometry import get_length_and_width
 
 
 def polygon_widths(polygon, centerline, spacing=30):

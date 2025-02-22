@@ -6,7 +6,7 @@ from valleyx.flow.flowpaths import (
     prep_flowlines,
     pour_points_from_flowpaths,
 )
-from valleyx.raster.raster_utils import finite_unique
+from valleyx.utils.raster import finite_unique
 
 logger.bind(module="flow_analysis")
 

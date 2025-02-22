@@ -6,9 +6,8 @@ from loguru import logger
 from valleyx.terrain.flow_dir import flowdir_wbt
 from valleyx.terrain.flow_dir import trace_flowpath
 from valleyx.terrain.flow_dir import DIRMAPS
-from valleyx.max_ascent.max_ascent import invert_dem
-from valleyx.profile.split import split_profile
-from valleyx.raster.raster_utils import point_to_pixel
+from valleyx.floor.flood_extent.split_profile import split_profile
+from valleyx.utils.raster import point_to_pixel
 
 
 def classify_profiles_max_ascent(
@@ -126,3 +125,21 @@ def is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
         return False
 
     return True
+
+
+def invert_dem(dem: xr.DataArray) -> xr.DataArray:
+    """
+    Inverts dem so that high points become low points and low points are the
+    high points. Maintains the range of values and the minimum elevation.
+
+    Parameters
+    ---------
+    dem: xr.DataArray
+        A raster representing elevations
+    Returns
+    -------
+    xr.DataArray
+        A raster representing inverted elevations
+    """
+    inverted_dem = -1 * (dem - dem.max().item()) + dem.min().item()
+    return inverted_dem

@@ -35,9 +35,8 @@ import ruptures as rpt
 from shapely.ops import nearest_points
 from shapely.geometry import Point
 
-from valleyx.geometry.width import polygon_widths
-from valleyx.raster.raster_utils import pixel_to_point
-from valleyx.utils import translate_to_wbt
+from valleyx.tools.width import polygon_widths
+from valleyx.utils.raster import pixel_to_point
 
 
 def segment_reaches(
@@ -91,7 +90,7 @@ def _get_outlet_point(flowacc):
     row, col = np.unravel_index(flowacc.argmax(), flowacc.shape)
     point = pixel_to_point(flowacc, row, col)
     series = gpd.GeoSeries(point, crs=flowacc.rio.crs)
-    series = translate_to_wbt(series, flowacc.rio.resolution())
+    #    series = translate_to_wbt(series, flowacc.rio.resolution())
     return series
 
 

@@ -1,11 +1,10 @@
-from operator import truediv
 import geopandas as gpd
 import pandas as pd
 import numpy as np
 from scipy import signal
 
-from valleyx.profile.split import split_profile
-from valleyx.profile.split import combine_profile
+from valleyx.floor.flood_extent.split_profile import split_profile
+from valleyx.floor.flood_extent.split_profile import combine_profile
 
 
 def preprocess_profiles(

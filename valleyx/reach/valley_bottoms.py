@@ -2,7 +2,7 @@ import geopandas as gpd
 import numpy as np
 from scipy.ndimage import binary_fill_holes
 
-from valleyx.raster.vectorize import single_polygon_from_binary_raster
+from valleyx.utils.vectorize import single_polygon_from_binary_raster
 
 
 def valley_bottoms(flowlines, subbasins, hand, threshold):

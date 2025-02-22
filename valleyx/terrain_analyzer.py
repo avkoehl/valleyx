@@ -43,7 +43,6 @@ class TerrainAnalyzer:
             ["dem", "cdem", "flow_dir", "flow_acc"]
         )
         dem.rio.to_raster(manifest["dem"])
-
         try:
             self.wbt.fill_depressions(
                 manifest["dem"],
@@ -52,21 +51,32 @@ class TerrainAnalyzer:
                 flat_increment=None,
                 max_depth=None,
             )
-            self.wbt.d8_pointer(manifest["cdem"], manifest["flow_dir"])
-            self.wbt.d8_flow_accumulation(
-                manifest["cdem"], manifest["flow_acc"], log=False, out_type="cells"
+
+            self.wbt.d8_pointer(
+                manifest["cdem"],
+                manifest["flow_dir"],
+                esri_pntr=False,
             )
 
-            conditioned = TerrainAnalyzer.load_raster(manifest["cdem"])
-            flow_dir = TerrainAnalyzer.load_raster(manifest["flow_dir"])
-            flow_acc = TerrainAnalyzer.load_raster(manifest["flow_acc"])
+            self.wbt.d8_flow_accumulation(
+                manifest["flow_dir"],
+                manifest["flow_acc"],
+                out_type="cells",
+                log=False,
+                clip=False,
+                pntr=True,
+                esri_pntr=False,
+            )
+            cdem = TerrainAnalyzer.load_raster(manifest["cdem"])
+            fdir = TerrainAnalyzer.load_raster(manifest["flow_dir"])
+            acc = TerrainAnalyzer.load_raster(manifest["flow_acc"])
 
         except Exception as e:
             raise ValueError(f"Error in flow accumulation workflow: {e}") from e
         finally:
             TerrainAnalyzer.cleanup_files(manifest)
 
-        return conditioned, flow_dir, flow_acc
+        return cdem, fdir, acc
 
     def subbasins(self, flow_dir, pour_points):
         rasters = self.create_temp_raster_paths(["flow_dir", "subbasins"])
@@ -139,7 +149,7 @@ class TerrainAnalyzer:
             TerrainAnalyzer.cleanup_files(manifest)
         return hand
 
-    def elevation_derivative(self, dem):
+    def elevation_derivatives(self, dem):
         manifest = self.create_temp_raster_paths(["dem", "slope", "profile_curvature"])
         dem.rio.to_raster(manifest["dem"])
 

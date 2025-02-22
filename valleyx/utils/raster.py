@@ -48,6 +48,9 @@ def pixel_to_point(raster: xr.DataArray, row: int, col: int) -> Point:
     """
     transform = raster.rio.transform()
     lon, lat = transform * (col, row)  # (x, y) corresponds to (col, row)
+    # offset by half a pixel to get the center of the pixel
+    lon += transform.a / 2
+    lat += transform.e / 2
     return Point(lon, lat)
 
 

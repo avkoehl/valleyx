@@ -5,9 +5,8 @@ import xarray as xr
 from shapely.geometry import Point
 import shapely
 
-from valleyx.utils import translate_to_wbt
-from valleyx.raster.raster_utils import pixel_to_point
-from valleyx.raster.raster_utils import finite_unique
+from valleyx.utils.raster import pixel_to_point
+from valleyx.utils.raster import finite_unique
 
 
 def pour_points_from_flowpaths(
@@ -28,7 +27,6 @@ def pour_points_from_flowpaths(
         pour_points_list.append(pour_point)
 
     pour_points = gpd.GeoSeries(pour_points_list, crs=flow_paths.rio.crs)
-    pour_points = translate_to_wbt(pour_points, flow_paths.rio.resolution())
     pour_points.index = finite_unique(flow_paths).tolist()
     return pour_points
 

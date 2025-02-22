@@ -5,8 +5,8 @@ import numpy as np
 from rasterio import features
 from shapely.geometry import shape
 
-from valleyx.raster.raster_utils import finite_unique
-from valleyx.geometry.geom_utils import tidy_polygons
+from valleyx.utils.raster import finite_unique
+from valleyx.utils.geometry import tidy_polygons
 
 
 def polygonize_feature(raster, feature_value=1):

@@ -3,22 +3,15 @@ from scipy.ndimage import binary_fill_holes
 from loguru import logger
 
 from valleyx.floor.foundation import foundation
-from valleyx.floor.connect import connected
-from valleyx.raster.raster_utils import finite_unique
+from valleyx.floor.foundation.connect import connected
+from valleyx.utils.raster import finite_unique
 
 logger.bind(module="label_floors")
 
 
-def check_dataset(dataset):
-    required = ["hand", "slope", "subbasin", "hillslope", "flow_path"]
-    for key in required:
-        if key not in dataset:
-            raise ValueError(f"raster missing in dataset: {key}")
-
-
 def label_floors(
-    wall_points,
-    dataset,
+    basin,
+    ta,
     max_floor_slope,
     foundation_threshold,
     buffer,
@@ -31,7 +24,9 @@ def label_floors(
     floors = dataset["subbasin"].copy()
     floors.data = np.full(floors.shape, False, dtype=bool)
 
-    logger.debug(f"Detecting baseline floor with slope threshold: {foundation_threshold}")
+    logger.debug(
+        f"Detecting baseline floor with slope threshold: {foundation_threshold}"
+    )
     foundation_floor = foundation(
         dataset["slope"], dataset["flow_path"], foundation_threshold
     )
@@ -42,7 +37,7 @@ def label_floors(
         result.data = np.zeros_like(floors)
         result = result.astype(np.uint8)
         result.data[foundation_floor] = 2
-        result.data[dataset['flow_path'] > 0] = 1
+        result.data[dataset["flow_path"] > 0] = 1
         return result
 
     for i, streamID in enumerate(finite_unique(dataset["subbasin"])):
@@ -52,8 +47,8 @@ def label_floors(
 
         if points is not None:
             logger.debug(
-                    f"{streamID}, count: {i} of {len(finite_unique(dataset['subbasin']))}, points: {len(points)}"
-                    )
+                f"{streamID}, count: {i} of {len(finite_unique(dataset['subbasin']))}, points: {len(points)}"
+            )
             floor = subbasin_floor(
                 points,
                 clipped_data["slope"],
@@ -67,8 +62,8 @@ def label_floors(
             floors = floors | floor
         else:
             logger.debug(
-                    f"{streamID}, count: {i} of {len(finite_unique(dataset['subbasin']))}, points: 0"
-                    )
+                f"{streamID}, count: {i} of {len(finite_unique(dataset['subbasin']))}, points: 0"
+            )
             continue  # no fkoor for subbasin other than the foundation
 
     # 0 = not floor, 1 = flowpath, 2 = base, 3 = added
@@ -152,6 +147,7 @@ def hand_threshold_floor(hand, slope, hand_threshold, slope_threshold):
         slope_condition = slope <= slope_threshold
         combined = hand_condition & slope_condition
         return combined
+
 
 def subbasin_floors(floor, subbasins):
     result = floor.copy()

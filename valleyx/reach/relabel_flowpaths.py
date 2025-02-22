@@ -1,7 +1,7 @@
 import numpy as np
 import geopandas as gpd
 
-from valleyx.raster.raster_utils import pixel_to_point, point_to_pixel
+from valleyx.utils.raster import pixel_to_point, point_to_pixel
 
 
 def relabel_flowpaths(pour_points, flowpaths, flowacc):

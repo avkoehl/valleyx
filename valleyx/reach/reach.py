@@ -3,7 +3,7 @@ import geopandas as gpd
 from shapely.geometry import Point
 from loguru import logger
 
-from valleyx.geometry.centerline import polygon_centerline
+from valleyx.tools.centerline import polygon_centerline
 from valleyx.reach.valley_bottoms import valley_bottoms
 from valleyx.reach.segment import segment_reaches
 from valleyx.reach.relabel_flowpaths import relabel_flowpaths

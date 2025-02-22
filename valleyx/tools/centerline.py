@@ -23,7 +23,7 @@ from shapely.geometry import Point, Polygon, LineString
 from shapelysmooth import taubin_smooth  # prefer taubin unless need to preserve nodes
 from shapelysmooth import chaikin_smooth
 
-from valleyx.geometry.geom_utils import create_points_along_boundary
+from valleyx.utils.geometry import create_points_along_boundary
 
 
 def polygon_centerline(
