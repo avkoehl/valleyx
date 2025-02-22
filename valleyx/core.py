@@ -40,8 +40,11 @@ def extract_valleys(
 
     Returns
     -------
+    Tuple[xr.DataArray, gpd.GeoSeries]
     xr.DataArray
         Raster with valley floors labeled
+    gpd.GeoSeries
+        Stream network
     """
     logger.info("Starting valley extraction workflow")
 
@@ -58,7 +61,7 @@ def extract_valleys(
     )
 
     logger.info("Detecting valley floors")
-    basin = label_floors(
+    floor = label_floors(
         basin,
         ta,
         config.max_floor_slope,
@@ -81,4 +84,4 @@ def extract_valleys(
     )
 
     logger.success("Valley extraction workflow completed")
-    return basin
+    return floor, basin.flowlines

@@ -50,8 +50,11 @@ if __name__ == "__main__":
         shutil.rmtree(args.working_dir)
     os.makedirs(args.working_dir)
 
-    results = extract_valleys(dem, flowlines, wbt, config)
+    results, flowlines = extract_valleys(dem, flowlines, wbt, config)
 
     results.rio.to_raster(args.floor_ofile)
+
+    if args.flowlines_file:
+        flowlines.to_file(args.flowlines_file)
 
     shutil.rmtree(args.working_dir)
