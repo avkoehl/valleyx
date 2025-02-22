@@ -7,9 +7,13 @@ import rioxarray as rxr
 
 
 class TerrainAnalyzer:
-    def __init__(self, wbt, prefix):
+    def __init__(self, wbt, prefix=None):
         self.wbt = wbt
-        self.prefix = prefix
+
+        if prefix is None:
+            self.prefix = "valleyx"
+        else:
+            self.prefix = prefix
 
     # helper
     @staticmethod

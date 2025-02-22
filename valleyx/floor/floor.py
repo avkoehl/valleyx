@@ -78,4 +78,5 @@ def label_floors(
 
     # keep only regions that are connected to the flowpath network
     combined = connected(combined, basin.flow_paths)
+    combined = combined.astype(np.uint8)
     return combined

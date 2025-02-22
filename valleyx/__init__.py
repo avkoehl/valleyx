@@ -19,8 +19,11 @@ from .basin import BasinData
 from .flow.flow import flow_analysis
 from .reach.reach import delineate_reaches
 from .floor.floor import label_floors
+from .core import extract_valleys
 
 __all__ = [
+    # main
+    "extract_valleys",
     # Core data structure
     "BasinData",
     # Main analytical functions
