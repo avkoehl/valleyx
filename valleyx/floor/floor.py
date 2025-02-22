@@ -40,7 +40,7 @@ def label_floors(
     slope, curvature = ta.elevation_derivatives(smoothed)
 
     logger.debug("computing foundation floor")
-    foundation_floor = foundation(slope, basin.flowpath, foundation_threshold)
+    foundation_floor = foundation(slope, basin.flow_paths, foundation_threshold)
 
     logger.debug("computing flood extents")
     inverted_dem = -1 * (basin.dem - basin.dem.max().item()) + basin.dem.min().item()
@@ -71,11 +71,11 @@ def label_floors(
     combined = combined.astype(np.uint8)
 
     # remove high slope
-    combined[slope.data > max_floor_slope] = 0
+    combined.data[slope.data > max_floor_slope] = 0
 
     # fill holes
     combined.data = binary_closing(combined.data, structure=np.ones((3, 3)))
 
     # keep only regions that are connected to the flowpath network
-    combined = connected(combined, basin.flowpath)
+    combined = connected(combined, basin.flow_paths)
     return combined
