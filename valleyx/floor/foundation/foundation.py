@@ -12,7 +12,7 @@ from scipy.ndimage import binary_closing
 from skimage.segmentation import felzenszwalb
 from skimage.morphology import isotropic_dilation
 
-from valleyx.floor.connect import connected
+from valleyx.floor.foundation.connect import connected
 from valleyx.floor.smooth import filter_nan_gaussian_conserving
 
 

@@ -2,16 +2,19 @@ import pandas as pd
 import geopandas as gpd
 import numpy as np
 from loguru import logger
+import xarray as xr
 
-from valleyx.terrain.flow_dir import flowdir_wbt
-from valleyx.terrain.flow_dir import trace_flowpath
-from valleyx.terrain.flow_dir import DIRMAPS
+from valleyx.floor.flood_extent.path import DIRMAPS, trace_flowpath
 from valleyx.floor.flood_extent.split_profile import split_profile
 from valleyx.utils.raster import point_to_pixel
 
 
 def classify_profiles_max_ascent(
-    xsections: gpd.GeoDataFrame, dem, slope, num_cells, slope_threshold, wbt
+    xsections: gpd.GeoDataFrame,
+    slope,
+    max_ascent_fdir,
+    num_cells,
+    slope_threshold,
 ):
     """
     Find the wall points for a stream network's cross sections.
@@ -21,8 +24,6 @@ def classify_profiles_max_ascent(
     ----------
     xsections: gpd.GeoDataFrame
         cross sections of the stream network with values for slope, curvature
-    dem: xr.DataArray
-        elevation raster
     slope: xr.DataArray
         slope raster
     num_cells: path length
@@ -38,8 +39,6 @@ def classify_profiles_max_ascent(
         if col not in xsections.columns:
             raise ValueError(f"Missing column: {col}, which is required")
 
-    inverted_dem = invert_dem(dem)
-    fdir = flowdir_wbt(inverted_dem, wbt)
     dirmap = DIRMAPS["wbt"]
 
     # classify floor points and wall points on each profile
@@ -58,7 +57,7 @@ def classify_profiles_max_ascent(
         classified = profile.copy()
         classified["bp"] = classified["curvature"] < 0
         classified = classify_profile_max_ascent(
-            classified, fdir, dirmap, slope, num_cells, slope_threshold
+            classified, max_ascent_fdir, dirmap, slope, num_cells, slope_threshold
         )
         processed_dfs.append(classified)
 
@@ -125,21 +124,3 @@ def is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
         return False
 
     return True
-
-
-def invert_dem(dem: xr.DataArray) -> xr.DataArray:
-    """
-    Inverts dem so that high points become low points and low points are the
-    high points. Maintains the range of values and the minimum elevation.
-
-    Parameters
-    ---------
-    dem: xr.DataArray
-        A raster representing elevations
-    Returns
-    -------
-    xr.DataArray
-        A raster representing inverted elevations
-    """
-    inverted_dem = -1 * (dem - dem.max().item()) + dem.min().item()
-    return inverted_dem

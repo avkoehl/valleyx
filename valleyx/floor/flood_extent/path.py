@@ -1,14 +1,11 @@
-import os
-
 import numba
 from numba.typed import Dict
 import numpy as np
 import geopandas as gpd
-import rioxarray as rxr
+import rioxarray
 import xarray as xr
 
-from valleyx.raster.raster_utils import pixel_to_point
-from valleyx.utils import WhiteBoxToolsUnique
+from valleyx.utils.raster import pixel_to_point
 
 DIRMAPS = {
     "esri": {
@@ -93,8 +90,6 @@ def trace_flowpath(
         - list of cell (row, col)
 
     """
-    current_row, current_col = row, col
-
     d = Dict()  # numba typed dict
     for k, v in dirmap.items():
         d[np.float32(k)] = np.int64(v)
@@ -106,32 +101,3 @@ def trace_flowpath(
     result = [pixel_to_point(flow_dir, row, col) for row, col in path]
     result = gpd.GeoSeries(result, crs=flow_dir.rio.crs)
     return result, path
-
-
-def flowdir_wbt(dem: xr.DataArray, wbt: WhiteBoxToolsUnique):
-    """
-    wrapper around whiteboxtools d8 flowdir
-
-    Parameters
-    ----------
-    dem: xr.DataArray
-        A raster representing elevations. For best results ensure it has been
-        hydrologically conditioned.
-    wbt: Instance of WhiteboxTools
-
-    Returns
-    -------
-    xr.DataArray
-        A raster of flow directions using WhiteBoxTools flow direction mappings
-    """
-    demfile = os.path.join(wbt.work_dir, f"{wbt.instance_id}-fdir_dem.tif")
-    flowdirfile = os.path.join(wbt.work_dir, f"{wbt.instance_id}-fdir.tif")
-
-    dem.rio.to_raster(demfile)
-
-    wbt.d8_pointer(demfile, flowdirfile)
-
-    with rxr.open_rasterio(flowdirfile, masked=True) as raster:
-        fdir = raster.squeeze().copy()
-
-    return fdir

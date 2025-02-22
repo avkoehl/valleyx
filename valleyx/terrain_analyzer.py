@@ -38,6 +38,23 @@ class TerrainAnalyzer:
     def create_temp_vector_paths(self, names):
         return {name: self.construct_fname(name, "shp") for name in names}
 
+    def flow_pointer(self, dem):
+        manifest = self.create_temp_raster_paths(["dem", "flow_dir"])
+        dem.rio.to_raster(manifest["dem"])
+
+        try:
+            self.wbt.d8_pointer(
+                manifest["dem"],
+                manifest["flow_dir"],
+                esri_pntr=False,
+            )
+            flow_dir = TerrainAnalyzer.load_raster(manifest["flow_dir"])
+        except Exception as e:
+            raise ValueError(f"Error in flow direction workflow: {e}") from e
+        finally:
+            TerrainAnalyzer.cleanup_files(manifest)
+        return flow_dir
+
     def flow_acc_workflow(self, dem):
         manifest = self.create_temp_raster_paths(
             ["dem", "cdem", "flow_dir", "flow_acc"]
