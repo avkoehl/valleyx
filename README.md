@@ -6,7 +6,7 @@ Combines two approaches:
 1. low slope areas connected to the flowlines
 2. elevation above stream thresholding 
 
-![map of extracted valley floor](/examples/img/result.png)
+![map of extracted valley floor](/img/result.png)
 
 ## Installation
 
