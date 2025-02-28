@@ -8,7 +8,7 @@ from valleyx.reach.valley_bottoms import valley_bottoms
 from valleyx.reach.segment import segment_reaches
 from valleyx.reach.relabel_flowpaths import relabel_flowpaths
 from valleyx.reach.reach_catchments import reach_hillslopes
-from valleyx.flow.flowpaths import prep_flowlines
+from valleyx.utils.flowpaths import prep_flowlines
 
 logger.bind(module="delineate_reaches")
 
