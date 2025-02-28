@@ -1,7 +1,7 @@
 from loguru import logger
 
 from valleyx.basin import BasinData
-from valleyx.flow.flowpaths import (
+from valleyx.utils.flowpaths import (
     find_channel_heads,
     prep_flowlines,
     pour_points_from_flowpaths,

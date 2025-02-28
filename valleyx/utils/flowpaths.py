@@ -31,28 +31,26 @@ def pour_points_from_flowpaths(
     return pour_points
 
 
-def prep_flowlines(flowlines, flow_acc):
-    flowlines["geometry"] = flowlines["geometry"].apply(
-        validate_flowline, args=(flow_acc,)
-    )
-    flowlines = flowlines[["STRM_VAL", "geometry"]]
-    flowlines = flowlines.sort_values("STRM_VAL")
-    flowlines = flowlines.reset_index(drop=True)
-    flowlines = flowlines.rename(columns={"STRM_VAL": "streamID"})
-    flowlines = gpd.GeoSeries(
-        flowlines["geometry"].values, index=flowlines["streamID"], crs=flow_acc.rio.crs
-    )
-    return flowlines
-
-
 def flowlines2net(flowlines):
     """convert flowlines to networkx graph"""
     G = nx.DiGraph()
-    for line in flowlines.geometry:
+    for streamID, line in flowlines.geometry:
         start = line.coords[0]
         end = line.coords[-1]
-        G.add_edge(start, end)
+        G.add_edge(start, end, streamID=streamID)
     return G
+
+
+def find_first_order_reaches(flowlines):
+    """returns list of streamIDs of first order streams segments or reaches"""
+    graph = flowlines2net(flowlines)
+    source_nodes = [node for node in graph.nodes() if graph.in_degree(node) == 0]
+    first_order = []
+    for node in source_nodes:
+        for edge in graph.edges(node, data=True):
+            streamID = edge[2]["streamID"]
+            first_order.append(streamID)
+    return first_order
 
 
 def find_channel_heads(flowlines):
@@ -66,36 +64,47 @@ def find_channel_heads(flowlines):
     return start_points
 
 
-def get_inlet_and_outlet_points(flowline, flow_acc):
-    """get the inlet and outlet points of a single flowline"""
-    coords = gpd.GeoSeries([Point(flowline.coords[0]), Point(flowline.coords[-1])])
-    xs = xr.DataArray(coords.geometry.x.values, dims="z")
-    ys = xr.DataArray(coords.geometry.y.values, dims="z")
-    fa = flow_acc.sel(x=xs, y=ys, method="nearest").values
-    coords = coords.iloc[fa.argsort()]
-    start = coords.iloc[0]
-    end = coords.iloc[1]
-    return start, end
+def prep_flowlines(flowlines, flow_acc):
+    def get_inlet_and_outlet_points(flowline, flow_acc):
+        """get the inlet and outlet points of a single flowline"""
+        coords = gpd.GeoSeries([Point(flowline.coords[0]), Point(flowline.coords[-1])])
+        xs = xr.DataArray(coords.geometry.x.values, dims="z")
+        ys = xr.DataArray(coords.geometry.y.values, dims="z")
+        fa = flow_acc.sel(x=xs, y=ys, method="nearest").values
+        coords = coords.iloc[fa.argsort()]
+        start = coords.iloc[0]
+        end = coords.iloc[1]
+        return start, end
 
-
-def flowline_flows_downstream(flowline, flow_acc):
-    """check if flowline flows downstream"""
-    start, end = get_inlet_and_outlet_points(flowline, flow_acc)
-    if shapely.equals(start, Point(flowline.coords[0])) and shapely.equals(
-        end, Point(flowline.coords[-1])
-    ):
-        return True
-    else:
-        return False
-
-
-def validate_flowline(flowline, flow_acc):
-    """validate flowline direction"""
-    if flowline_flows_downstream(flowline, flow_acc):
-        return flowline
-    else:
-        new_flowline = flowline.reverse()
-        if flowline_flows_downstream(new_flowline, flow_acc):
-            return new_flowline
+    def flowline_flows_downstream(flowline, flow_acc):
+        """check if flowline flows downstream"""
+        start, end = get_inlet_and_outlet_points(flowline, flow_acc)
+        if shapely.equals(start, Point(flowline.coords[0])) and shapely.equals(
+            end, Point(flowline.coords[-1])
+        ):
+            return True
         else:
-            raise ValueError("Attempt to repair flowline failed")
+            return False
+
+    def validate_flowline(flowline, flow_acc):
+        """validate flowline direction"""
+        if flowline_flows_downstream(flowline, flow_acc):
+            return flowline
+        else:
+            new_flowline = flowline.reverse()
+            if flowline_flows_downstream(new_flowline, flow_acc):
+                return new_flowline
+            else:
+                raise ValueError("Attempt to repair flowline failed")
+
+    flowlines["geometry"] = flowlines["geometry"].apply(
+        validate_flowline, args=(flow_acc,)
+    )
+    flowlines = flowlines[["STRM_VAL", "geometry"]]
+    flowlines = flowlines.sort_values("STRM_VAL")
+    flowlines = flowlines.reset_index(drop=True)
+    flowlines = flowlines.rename(columns={"STRM_VAL": "streamID"})
+    flowlines = gpd.GeoSeries(
+        flowlines["geometry"].values, index=flowlines["streamID"], crs=flow_acc.rio.crs
+    )
+    return flowlines
