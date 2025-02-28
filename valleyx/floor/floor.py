@@ -6,6 +6,7 @@ from valleyx.floor.smooth import filter_nan_gaussian_conserving
 from valleyx.floor.foundation.connect import connected
 from valleyx.floor.flood_extent.flood import flood
 from valleyx.floor.foundation.foundation import foundation
+from valleyx.utils.flowpaths import find_first_order_reaches
 
 logger.bind(module="label_floors")
 
@@ -40,7 +41,11 @@ def label_floors(
     slope, curvature = ta.elevation_derivatives(smoothed)
 
     logger.debug("computing foundation floor")
-    foundation_floor = foundation(slope, basin.flow_paths, foundation_threshold)
+    first_order_reaches = find_first_order_reaches(basin.flowlines)
+    filtered_flow_paths = basin.flow_paths.copy()
+    for reach in first_order_reaches:
+        filtered_flow_paths.data[filtered_flow_paths.data == reach] = 0
+    foundation_floor = foundation(slope, filtered_flow_paths, foundation_threshold)
 
     logger.debug("computing flood extents")
     inverted_dem = -1 * (basin.dem - basin.dem.max().item()) + basin.dem.min().item()
@@ -75,6 +80,9 @@ def label_floors(
 
     # fill holes
     combined.data = binary_closing(combined.data, structure=np.ones((3, 3)))
+
+    # burnin flowpaths
+    combined.data[basin.flow_paths.data > 0] = 1
 
     # keep only regions that are connected to the flowpath network
     combined = connected(combined, basin.flow_paths)
