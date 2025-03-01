@@ -10,7 +10,7 @@ import pytest
 import rioxarray as rxr
 
 from valleyx.config import ValleyConfig
-from valleyx import flow_analysis, delineate_reaches, label_floors
+from valleyx.core import flow_analysis, delineate_reaches, label_floors
 from valleyx.terrain_analyzer import TerrainAnalyzer
 from valleyx.wbt import setup_wbt
 

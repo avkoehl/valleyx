@@ -34,7 +34,7 @@ def pour_points_from_flowpaths(
 def flowlines2net(flowlines):
     """convert flowlines to networkx graph"""
     G = nx.DiGraph()
-    for streamID, line in flowlines.items():
+    for streamID, line in flowlines.geometry.items():
         start = line.coords[0]
         end = line.coords[-1]
         G.add_edge(start, end, streamID=streamID)
