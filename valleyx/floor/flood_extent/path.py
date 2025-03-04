@@ -5,8 +5,6 @@ import geopandas as gpd
 import rioxarray
 import xarray as xr
 
-from valleyx.utils.raster import pixel_to_point
-
 DIRMAPS = {
     "esri": {
         32: (-1, -1),  # up left
@@ -98,6 +96,4 @@ def trace_flowpath(
         np.int64(row), np.int64(col), flow_dir.values, d, num_cells
     )
 
-    result = [pixel_to_point(flow_dir, row, col) for row, col in path]
-    result = gpd.GeoSeries(result, crs=flow_dir.rio.crs)
-    return result, path
+    return path

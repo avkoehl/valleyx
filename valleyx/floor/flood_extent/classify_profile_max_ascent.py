@@ -6,7 +6,7 @@ import xarray as xr
 
 from valleyx.floor.flood_extent.path import DIRMAPS, trace_flowpath
 from valleyx.floor.flood_extent.split_profile import split_profile
-from valleyx.utils.raster import point_to_pixel
+from valleyx.utils.raster import points_to_pixels
 
 
 def classify_profiles_max_ascent(
@@ -56,6 +56,10 @@ def classify_profiles_max_ascent(
 
         classified = profile.copy()
         classified["bp"] = classified["curvature"] < 0
+        rows, cols = points_to_pixels(slope, classified["geom"])
+        classified["rows"] = rows
+        classified["cols"] = cols
+
         classified = classify_profile_max_ascent(
             classified, max_ascent_fdir, dirmap, slope, num_cells, slope_threshold
         )
@@ -99,18 +103,19 @@ def _find_wall_half_max_ascent(
         True  # this is the cell immediately next to the stream
     )
 
-    bps = half_profile.loc[half_profile["bp"], "geom"]
+    bps = half_profile.loc[half_profile["bp"]]
 
-    for ind, point in bps.items():
-        if is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
+    for ind, bp_row in bps.iterrows():
+        row = bp_row["rows"]
+        col = bp_row["cols"]
+        if is_wall_point(row, col, fdir, dirmap, slope, slope_threshold, num_cells):
             return ind
     return None
 
 
-def is_wall_point(point, fdir, dirmap, slope, slope_threshold, num_cells):
+def is_wall_point(row, col, fdir, dirmap, slope, slope_threshold, num_cells):
     # get path
-    row, col = point_to_pixel(fdir, point)
-    points, path = trace_flowpath(row, col, fdir, dirmap, num_cells + 1)
+    path = trace_flowpath(row, col, fdir, dirmap, num_cells + 1)
     path = path[1:]
 
     if len(path) < num_cells:

@@ -3,6 +3,19 @@ import xarray as xr
 from shapely.geometry import Point
 
 
+def points_to_pixels(raster: xr.DataArray, points: list[Point]):
+    transform = raster.rio.transform()
+    inverse = ~transform
+
+    rows = []
+    cols = []
+    for point in points:
+        col, row = inverse * (point.x, point.y)
+        rows.append(int(row))
+        cols.append(int(col))
+    return rows, cols
+
+
 def point_to_pixel(raster: xr.DataArray, point: Point) -> tuple[int, int]:
     """
     Converts shapely point to the row and col index of that point according
