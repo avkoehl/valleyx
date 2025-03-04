@@ -1,3 +1,4 @@
+import time
 import os
 from pathlib import Path
 
@@ -64,7 +65,10 @@ class TerrainAnalyzer:
             ["dem", "cdem", "flow_dir", "flow_acc"]
         )
         dem.rio.to_raster(manifest["dem"])
+
         try:
+            # Add a single retry for fill_depressions which occasionally fails
+            # no idea why
             self.wbt.fill_depressions(
                 manifest["dem"],
                 manifest["cdem"],
@@ -72,13 +76,26 @@ class TerrainAnalyzer:
                 flat_increment=None,
                 max_depth=None,
             )
+            # if file cdem is not created, retry
+            if not os.path.exists(manifest["cdem"]):
+                # Wait briefly before retrying
+                time.sleep(1)
+                # Try once more
+                print(f"Retrying fill_depressions after unexpected error")
+                self.wbt.fill_depressions(
+                    manifest["dem"],
+                    manifest["cdem"],
+                    fix_flats=True,
+                    flat_increment=None,
+                    max_depth=None,
+                )
 
+            # Continue with remaining operations as normal
             self.wbt.d8_pointer(
                 manifest["cdem"],
                 manifest["flow_dir"],
                 esri_pntr=False,
             )
-
             self.wbt.d8_flow_accumulation(
                 manifest["flow_dir"],
                 manifest["flow_acc"],
@@ -91,12 +108,10 @@ class TerrainAnalyzer:
             cdem = TerrainAnalyzer.load_raster(manifest["cdem"])
             fdir = TerrainAnalyzer.load_raster(manifest["flow_dir"])
             acc = TerrainAnalyzer.load_raster(manifest["flow_acc"])
-
         except Exception as e:
             raise ValueError(f"Error in flow accumulation workflow: {e}") from e
         finally:
             TerrainAnalyzer.cleanup_files(manifest)
-
         return cdem, fdir, acc
 
     def subbasins(self, flow_dir, pour_points):
