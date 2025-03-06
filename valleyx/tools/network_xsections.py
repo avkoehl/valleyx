@@ -9,7 +9,7 @@ from shapely.geometry import LineString
 from valleyx.utils.vectorize import single_polygon_from_binary_raster
 from valleyx.utils.geometry import get_length_and_width
 from valleyx.tools.cross_section import get_points_on_linestring
-from valleyx.tools.cross_section import get_cross_section_points_from_points
+from valleyx.tools.cross_section import get_cross_section_points
 
 
 def network_xsections(
@@ -109,9 +109,8 @@ def flowline_xsections(
         - "alpha": numeric, represents the distance from the center point of the xsection
         - "xsID": numeric,  cross section id specific to the flowline
     """
-    points = get_points_on_linestring(flowline, line_spacing)
-    xspoints = get_cross_section_points_from_points(
-        flowline, points, line_width, point_spacing
+    xspoints = get_cross_section_points(
+        flowline, line_spacing, line_width, point_spacing
     )
     xspoints = xspoints.rename(
         columns={"alpha": "alpha", "point": "geom", "cross_section_id": "xsID"}

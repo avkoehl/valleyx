@@ -19,25 +19,13 @@ from valleyx.utils.geometry import get_points_on_linestring
 def get_cross_section_lines(linestring, xs_spacing, xs_width):
     points = get_points_on_linestring(linestring, xs_spacing)
     width = int(xs_width + 1)
-
-    return get_cross_section_lines_from_points(linestring, points, width)
-
-
-def get_cross_section_points(linestring, xs_spacing, xs_width, xs_point_spacing):
-    # get points on the linestring
-    points = get_points_on_linestring(linestring, xs_spacing)
-    return get_cross_section_points_from_points(
-        linestring, points, xs_width, xs_point_spacing
-    )
-
-
-def get_cross_section_lines_from_points(linestring, points, width):
     dfs = []
     for i, point in enumerate(points):
-        A, B = _nearest_vertices2(point, linestring)
-        p1 = _sample_point_on_perpendicular_line(point, A, B, width)
-        p2 = _sample_point_on_perpendicular_line(point, A, B, -width)
-        xs = LineString([p1, p2])
+        A, B = _nearest_vertices_on_line(point, linestring)
+        end_points = _sample_points_on_perpendicular(
+            point, A, B, np.arange(-width, width)
+        )
+        xs = LineString([end_points[0], end_points[1]])
         df = pd.DataFrame(
             [{"cross_section_id": i, "center_point": point, "geometry": xs}]
         )
@@ -47,22 +35,19 @@ def get_cross_section_lines_from_points(linestring, points, width):
     return lines
 
 
-def get_cross_section_points_from_points(
-    linestring, points, xs_width, xs_point_spacing
-):
-    alphas = list(range(-xs_width, xs_width + xs_point_spacing, xs_point_spacing))
+def get_cross_section_points(linestring, xs_spacing, xs_width, xs_point_spacing):
+    points = get_points_on_linestring(linestring, xs_spacing)
+    alphas = np.arange(-xs_width, xs_width + xs_point_spacing, xs_point_spacing)
 
     # for each point sample points on either side of the linestring
     dfs = []
     for i, point in enumerate(points):
-        A, B = _nearest_vertices2(point, linestring)
+        A, B = _nearest_vertices_on_line(point, linestring)
+        sampled_points = _sample_points_on_perpendicular(point, A, B, alphas)
         df = pd.DataFrame(
             {
                 "alpha": alphas,
-                "point": [
-                    _sample_point_on_perpendicular_line(point, A, B, alpha)
-                    for alpha in alphas
-                ],
+                "point": sampled_points,
                 "cross_section_id": i,
             }
         )
@@ -74,9 +59,9 @@ def get_cross_section_points_from_points(
 
 
 # --- Internal Functions ----------------------------------------------------- #
-def _nearest_vertices2(point, linestring):
-    # its known that the point is on the linestring
-    linestring_copy = linestring
+def _nearest_vertices_on_line(point, linestring):
+    # assumes point is on the linestring
+    # so don't need to check against every vertex, just ones that are within a buffer
     linestring = gpd.GeoSeries(linestring).clip(point.buffer(5)).iloc[0]
 
     if isinstance(linestring, shapely.geometry.multilinestring.MultiLineString):
@@ -103,16 +88,10 @@ def _nearest_vertices2(point, linestring):
     return [nearest_point, second_nearest]
 
 
-def _nearest_vertices(point, linestring):
-    line_coords = linestring.coords
-    distances = [point.distance(Point(x, y)) for x, y in line_coords]
-    nearest_indices = np.argsort(distances)[:2]
-    nearest_vertices = [Point(line_coords[int(i)]) for i in nearest_indices]
-    return nearest_vertices
-
-
-def _sample_point_on_perpendicular_line(point, A, B, alpha):
+def _sample_points_on_perpendicular(point, A, B, alphas):
     length = A.distance(B)
-    x = point.x + alpha * (A.y - B.y) / length
-    y = point.y + alpha * (B.x - A.x) / length
-    return Point(x, y)
+    dx = (A.y - B.y) / length
+    dy = (B.x - A.x) / length
+    xs = point.x + alphas * dx
+    ys = point.y + alphas * dy
+    return [Point(x, y) for x, y in zip(xs, ys)]
