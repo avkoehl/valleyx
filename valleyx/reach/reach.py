@@ -30,7 +30,7 @@ def delineate_reaches(basin, ta, hand_threshold, spacing, minsize, window):
 
     logger.debug("Split segments into reaches")
     pour_points = []
-    for streamID in basin.flowlines.index:
+    for i, streamID in enumerate(basin.flowlines.index):
         bottom = vbs.loc[streamID]
         flowline = basin.flowlines.loc[streamID]
         inlet = Point(flowline.coords[0])
@@ -52,8 +52,9 @@ def delineate_reaches(basin, ta, hand_threshold, spacing, minsize, window):
         )
         reach_points = gpd.GeoDataFrame(geometry=reach_points)
         reach_points["streamID"] = streamID
+        percent = f"{((i + 1) / len(basin.flowlines)) * 100:.2f}%"
         logger.debug(
-            f"streamID: {streamID} of {len(vbs)} - {len(reach_points)} reaches"
+            f"processing: {i+1}/{len(vbs)} ({percent} complete) - {len(reach_points)} reaches"
         )
         pour_points.append(reach_points)
 

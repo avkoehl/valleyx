@@ -23,7 +23,7 @@ def get_cross_section_lines(linestring, xs_spacing, xs_width):
     for i, point in enumerate(points):
         A, B = _nearest_vertices_on_line(point, linestring)
         end_points = _sample_points_on_perpendicular(
-            point, A, B, np.arange(-width, width)
+            point, A, B, np.array([-width, width])
         )
         xs = LineString([end_points[0], end_points[1]])
         df = pd.DataFrame(

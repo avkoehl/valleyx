@@ -51,7 +51,7 @@ def classify_profiles_max_ascent(
         if i % log_interval == 0 or i == ngroups:
             percent_complete = (i / ngroups) * 100
             logger.debug(
-                f"Iteration {i} / {ngroups} ({percent_complete:.2f}% complete)"
+                f"processing: {i}/{ngroups} ({percent_complete:.2f}% complete)"
             )
 
         classified = profile.copy()
