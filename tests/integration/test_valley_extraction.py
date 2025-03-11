@@ -12,7 +12,7 @@ import rioxarray as rxr
 from valleyx.config import ValleyConfig
 from valleyx.core import flow_analysis, delineate_reaches, label_floors
 from valleyx.terrain_analyzer import TerrainAnalyzer
-from valleyx.wbt import setup_wbt
+from valleyx.core import setup_wbt
 
 # Get the tests directory path
 TESTS_DIR = Path(__file__).parent.parent
@@ -45,29 +45,8 @@ def working_dir():
 @pytest.fixture
 def config():
     """Create test configuration"""
-    return ValleyConfig(
-        hand_threshold=10.0,
-        spacing=50,
-        minsize=300,
-        window=5,
-        max_floor_slope=15,
-        foundation_slope=5,
-        sigma=4,
-        line_spacing=50,
-        line_width=500,
-        line_max_width=500,
-        point_spacing=10,
-        min_hand_jump=15,
-        ratio=3.5,
-        min_peak_prominence=20,
-        min_distance=30,
-        num_cells=5,
-        slope_threshold=10,
-        buffer=1,
-        min_points=10,
-        percentile=0.80,
-        default_threshold=5,
-    )
+    cfg = ValleyConfig()
+    return cfg
 
 
 def test_valley_extraction_workflow(test_data, working_dir, config):
@@ -84,29 +63,33 @@ def test_valley_extraction_workflow(test_data, working_dir, config):
     basin = flow_analysis(dem, flowlines, ta)
 
     basin = delineate_reaches(
-        basin, ta, config.hand_threshold, config.spacing, config.minsize, config.window
-    )
-
-    floor = label_floors(
         basin,
         ta,
-        config.max_floor_slope,
-        config.foundation_slope,
-        config.sigma,
-        config.line_spacing,
-        config.line_width,
-        config.line_max_width,
-        config.point_spacing,
-        config.min_hand_jump,
-        config.ratio,
-        config.min_peak_prominence,
-        config.min_distance,
-        config.num_cells,
-        config.slope_threshold,
-        config.buffer,
-        config.min_points,
-        config.percentile,
-        config.default_threshold,
+        config.reach.hand_threshold,
+        config.reach.spacing,
+        config.reach.minsize,
+        config.reach.window,
+    )
+
+    floor, _, _ = label_floors(
+        basin,
+        ta,
+        config.floor.max_floor_slope,
+        config.floor.foundation.slope,
+        config.floor.foundation.sigma,
+        config.floor.flood.xs_spacing,
+        config.floor.flood.xs_max_width,
+        config.floor.flood.point_spacing,
+        config.floor.flood.min_hand_jump,
+        config.floor.flood.ratio,
+        config.floor.flood.min_peak_prominence,
+        config.floor.flood.min_distance,
+        config.floor.flood.num_cells,
+        config.floor.flood.slope_threshold,
+        config.floor.flood.min_points,
+        config.floor.flood.percentile,
+        config.floor.flood.buffer,
+        config.floor.flood.default_threshold,
     )
 
     # Validation
@@ -126,7 +109,9 @@ def test_valley_extraction_workflow(test_data, working_dir, config):
         os.makedirs(output_dir)
 
         floor.rio.to_raster(output_dir / "test_floor_output.tif")
-        basin.flowlines.to_file(output_dir / "test_flowlines_output.shp")
+        basin.flowlines.to_file(
+            output_dir / "test_flowlines_output.gpkg", driver="GPKG"
+        )
 
         visualize_results(dem, floor, basin.flowlines, output_dir)
 
