@@ -61,10 +61,12 @@ def delineate_reaches(basin, ta, hand_threshold, spacing, minsize, window):
     pour_points = pd.concat(pour_points, ignore_index=True)
 
     # need to relabel flowpaths
+    logger.debug("Relabel flowpaths")
     basin.flow_paths = relabel_flowpaths(pour_points, basin.flow_paths, basin.flow_acc)
     basin.flowlines = prep_flowlines(
         ta.flowpaths_to_flowlines(basin.flow_paths, basin.flow_dir), basin.flow_acc
     )
+    logger.debug("compute subbasins and hillslopes")
     basin.subbasins = ta.subbasins(basin.flow_dir, pour_points)
     basin.hillslopes = reach_hillslopes(
         basin.subbasins, basin.flow_paths, basin.flow_dir, ta

@@ -13,17 +13,20 @@ label_floors : Map valley floor
 
 """
 
-from .wbt import setup_wbt
 from .terrain_analyzer import TerrainAnalyzer
 from .basin import BasinData
+from .config import ValleyConfig
 from .flow.flow import flow_analysis
 from .reach.reach import delineate_reaches
 from .floor.floor import label_floors
 from .core import extract_valleys
+from .core import setup_wbt
 
 __all__ = [
     # main
     "extract_valleys",
+    # Configuration
+    "ValleyConfig",
     # Core data structure
     "BasinData",
     # Main analytical functions
@@ -35,4 +38,4 @@ __all__ = [
     "TerrainAnalyzer",
 ]
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"

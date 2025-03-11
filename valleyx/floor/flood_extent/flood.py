@@ -21,9 +21,8 @@ def flood(
     slope,
     curvature,
     max_ascent_fdir,
-    line_spacing,
-    line_width,
-    line_max_width,
+    xs_spacing,
+    xs_max_width,
     point_spacing,
     min_hand_jump,
     ratio,
@@ -41,10 +40,9 @@ def flood(
     dataset = prep_data(basin, slope, curvature)
     xsections = network_xsections(
         smooth_flowlines(basin.flowlines),
-        line_spacing,
-        line_width,
+        xs_spacing,
+        xs_max_width,
         point_spacing,
-        line_max_width,
         basin.subbasins,
     )
     xsections = observe_values(xsections, dataset)
@@ -90,7 +88,7 @@ def flood(
     flowpaths = basin.flow_paths > 0
     flooded = flooded + flowpaths
     flooded = flooded > 0
-    return flooded
+    return flooded, thresholds, boundary_pts
 
 
 def apply_flood_thresholds(basin, thresholds):

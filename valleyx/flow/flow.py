@@ -32,6 +32,20 @@ def flow_analysis(dem, flowlines, ta):
 
     logger.info("Starting flowline processing")
 
+    # confirm each element in flowlines are linestrings
+    if not flowlines.geometry.type.eq("LineString").all():
+        logger.info(
+            "Input contains non-LineString geometries. Attempting to convert by exploding multi-part geometries..."
+        )
+        flowlines = flowlines.explode(index_parts=False)
+        if not flowlines.geometry.type.eq("LineString").all():
+            raise ValueError("flowlines must be a GeoSeries of LineStrings")
+        else:
+            logger.info("Conversion successful")
+    # confirm flowlines are in the same crs as dem
+    if dem.rio.crs != flowlines.crs:
+        raise ValueError("flowlines and dem must have the same crs")
+
     logger.info("Running flow accumulation workflow")
     conditioned, flow_dir, flow_acc = ta.flow_acc_workflow(dem)
 

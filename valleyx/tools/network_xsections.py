@@ -8,16 +8,14 @@ from shapely.geometry import LineString
 
 from valleyx.utils.vectorize import single_polygon_from_binary_raster
 from valleyx.utils.geometry import get_length_and_width
-from valleyx.tools.cross_section import get_points_on_linestring
 from valleyx.tools.cross_section import get_cross_section_points
 
 
 def network_xsections(
     flowlines: gpd.GeoSeries,
-    line_spacing: int,
-    line_width: int,
+    xs_spacing: int,
+    xs_max_width: int,
     point_spacing: int,
-    line_max_width: Optional[int] = None,
     subbasins: Optional[xr.DataArray] = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -27,14 +25,12 @@ def network_xsections(
     ----------
     flowlines: gpd.GeoSeries[LineString]
         A series of flowline geometries
-    line_spacing: int
+    xs_spacing: int
         The distance between cross sections
-    line_width: int
+    xs_max_width: int
         The length of each cross section (will be overridden by subbasins if provided
     point_spacing: int
         The distance between points to observe along each cross section line
-    line_max_width: Optional[int]:
-        The maximum length for the xsection
     subbasins: Optional[xr.DataArray], optional
         An optional subbasin raster, if provided, this will make it so that the
         cross section widths are clipped to the subbasin dimensions for the
@@ -54,23 +50,10 @@ def network_xsections(
     xsections = gpd.GeoDataFrame()
 
     for streamID, flowline in flowlines.items():
+        xspoints = flowline_xsections(flowline, xs_spacing, xs_max_width, point_spacing)
         if subbasins is not None:
             poly = single_polygon_from_binary_raster(subbasins == streamID)
-            width = int(max(get_length_and_width(poly)) + 1)
-
-            if line_max_width:
-                if line_max_width < width:
-                    width = line_max_width
-
-            xspoints = flowline_xsections(flowline, line_spacing, width, point_spacing)
             xspoints = xspoints.clip(poly)
-        else:
-            if max_length:
-                if max_length < line_width:
-                    line_width = max_length
-            xspoints = flowline_xsections(
-                flowline, line_spacing, line_width, point_spacing
-            )
 
         xspoints["streamID"] = streamID
         xsections = pd.concat([xsections, xspoints], ignore_index=True)
@@ -97,7 +80,7 @@ def flowline_xsections(
     line_spacing: int
         distance between cross sections
     line_width: int
-        length of the cross section
+        length of the cross section divided by 2
     point_spacing: int
         distance between points to observe along each cross section line
 
