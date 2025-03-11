@@ -16,6 +16,10 @@ label_floors : Map valley floor
 from .terrain_analyzer import TerrainAnalyzer
 from .basin import BasinData
 from .config import ValleyConfig
+from .config import ReachConfig
+from .config import FloorConfig
+from .config import FloodConfig
+from .config import FoundationConfig
 from .flow.flow import flow_analysis
 from .reach.reach import delineate_reaches
 from .floor.floor import label_floors
@@ -27,6 +31,10 @@ __all__ = [
     "extract_valleys",
     # Configuration
     "ValleyConfig",
+    "ReachConfig",
+    "FloorConfig",
+    "FloodConfig",
+    "FoundationConfig",
     # Core data structure
     "BasinData",
     # Main analytical functions
