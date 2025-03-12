@@ -85,7 +85,7 @@ def test_valley_extraction_workflow(test_data, working_dir, config):
         config.floor.flood.ratio,
         config.floor.flood.min_peak_prominence,
         config.floor.flood.min_distance,
-        config.floor.flood.num_cells,
+        config.floor.flood.path_length,
         config.floor.flood.slope_threshold,
         config.floor.flood.min_points,
         config.floor.flood.percentile,
