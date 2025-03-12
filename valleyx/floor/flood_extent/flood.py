@@ -28,7 +28,7 @@ def flood(
     ratio,
     min_peak_prominence,
     min_distance,
-    num_cells,
+    path_length,
     slope_threshold,
     min_points,
     percentile,
@@ -59,6 +59,8 @@ def flood(
 
     # detect boundary points
     logger.debug("Detecting boundary points")
+    # convert path length to number of cells based on slope.rio.resolution
+    num_cells = int(path_length / slope.rio.resolution()[0])
     xsections = classify_profiles_max_ascent(
         profiles,
         dataset["slope"],
@@ -122,6 +124,9 @@ def determine_flood_extents(
         clipped_hillslopes = hillslopes.where(subbasins == reachID)
 
         for hillslopeID in finite_unique(clipped_hillslopes):
+            if hillslopeID == 0:
+                continue
+
             points = boundary_pts.loc[boundary_pts["streamID"] == reachID]
             points = points.loc[points["hillslope"] == hillslopeID]
 

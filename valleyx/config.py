@@ -69,8 +69,8 @@ class FloodConfig:
     min_distance : int, default=20
         Minimum required distance from stream center in meters for the cross
         section to be considered
-    num_cells : int, default=5
-        Number of cells to consider for the sustained slope
+    path_length : float, default=50
+        Length of the sustained slope path in meters
     slope_threshold : float, default=10
         Minimum slope in degrees to be considered a sustained slope
     default_threshold : float, default=5
@@ -96,7 +96,7 @@ class FloodConfig:
     min_distance: int = 20  # meters
 
     # sustained slope parameters
-    num_cells: int = 5  # number of cells
+    path_length: float = 50  # meters
     slope_threshold: float = 10  # degrees slope
 
     # hand thresholding parameters

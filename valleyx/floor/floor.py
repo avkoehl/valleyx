@@ -1,12 +1,12 @@
 from loguru import logger
 import numpy as np
 from scipy.ndimage import binary_closing
+from skimage.morphology import remove_small_holes
 
 from valleyx.floor.smooth import filter_nan_gaussian_conserving
 from valleyx.floor.foundation.connect import connected
 from valleyx.floor.flood_extent.flood import flood
 from valleyx.floor.foundation.foundation import foundation
-from valleyx.floor.close_holes import close_holes
 from valleyx.utils.flowpaths import find_first_order_reaches
 
 logger.bind(module="label_floors")
@@ -26,7 +26,7 @@ def label_floors(
     ratio,
     min_peak_prominence,
     min_distance,
-    num_cells,
+    path_length,
     slope_threshold,
     min_points,
     percentile,
@@ -66,7 +66,7 @@ def label_floors(
         ratio,
         min_peak_prominence,
         min_distance,
-        num_cells,
+        path_length,
         slope_threshold,
         min_points,
         percentile,
@@ -95,8 +95,9 @@ def label_floors(
     # remove small regions
     # convert area to number of cells based on basin.rio.resolution
     if max_fill_area:
-        num_cells = max_fill_area / basin.dem.rio.resolution[0] ** 2
+        num_cells = max_fill_area / basin.dem.rio.resolution()[0] ** 2
         num_cells = int(num_cells)
-        combined = close_holes(combined, num_cells)
+        combined.data = remove_small_holes(combined.data, num_cells)
+        combined = combined.astype(np.uint8)
 
     return combined, hand_thresholds, boundary_points
