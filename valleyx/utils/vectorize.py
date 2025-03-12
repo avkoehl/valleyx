@@ -89,5 +89,8 @@ def single_polygon_from_binary_raster(binary_raster, min_percent_area=99):
             return polygons.iloc[0]
         else:
             raise ValueError("attempt to find single polygon failed")
+
+    if len(polygons) == 0:
+        return None
     else:
         return polygons.iloc[0]

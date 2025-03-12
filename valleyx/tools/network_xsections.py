@@ -52,7 +52,10 @@ def network_xsections(
     for streamID, flowline in flowlines.items():
         xspoints = flowline_xsections(flowline, xs_spacing, xs_max_width, point_spacing)
         if subbasins is not None:
-            poly = single_polygon_from_binary_raster(subbasins == streamID)
+            condition = subbasins == streamID
+            if not condition.any():
+                continue
+            poly = single_polygon_from_binary_raster(condition)
             xspoints = xspoints.clip(poly)
 
         xspoints["streamID"] = streamID
