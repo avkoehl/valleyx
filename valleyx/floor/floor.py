@@ -6,6 +6,7 @@ from valleyx.floor.smooth import filter_nan_gaussian_conserving
 from valleyx.floor.foundation.connect import connected
 from valleyx.floor.flood_extent.flood import flood
 from valleyx.floor.foundation.foundation import foundation
+from valleyx.floor.close_holes import close_holes
 from valleyx.utils.flowpaths import find_first_order_reaches
 
 logger.bind(module="label_floors")
@@ -15,6 +16,7 @@ def label_floors(
     basin,
     ta,
     max_floor_slope,
+    max_fill_area,
     foundation_threshold,
     sigma,
     xs_spacing,
@@ -37,16 +39,19 @@ def label_floors(
     smoothed_data = filter_nan_gaussian_conserving(basin.dem.data, sigma)
     smoothed = basin.dem.copy()
     smoothed.data = smoothed_data
-    slope, curvature = ta.elevation_derivatives(smoothed)
+    slope_smooth, _ = ta.elevation_derivatives(smoothed)
 
     logger.debug("computing foundation floor")
     first_order_reaches = find_first_order_reaches(basin.flowlines)
     filtered_flow_paths = basin.flow_paths.copy()
     for reach in first_order_reaches:
         filtered_flow_paths.data[filtered_flow_paths.data == reach] = 0
-    foundation_floor = foundation(slope, filtered_flow_paths, foundation_threshold)
+    foundation_floor = foundation(
+        slope_smooth, filtered_flow_paths, foundation_threshold
+    )
 
     logger.debug("computing flood extents")
+    slope, curvature = ta.elevation_derivatives(basin.dem)
     inverted_dem = -1 * (basin.dem - basin.dem.max().item()) + basin.dem.min().item()
     max_ascent_fdir = ta.flow_pointer(inverted_dem)
     flood_extent_floor, hand_thresholds, boundary_points = flood(
@@ -86,5 +91,12 @@ def label_floors(
     # keep only regions that are connected to the flowpath network
     combined = connected(combined, basin.flow_paths)
     combined = combined.astype(np.uint8)
+
+    # remove small regions
+    # convert area to number of cells based on basin.rio.resolution
+    if max_fill_area:
+        num_cells = max_fill_area / basin.dem.rio.resolution[0] ** 2
+        num_cells = int(num_cells)
+        combined = close_holes(combined, num_cells)
 
     return combined, hand_thresholds, boundary_points

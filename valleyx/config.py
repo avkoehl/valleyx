@@ -40,7 +40,7 @@ class FoundationConfig:
     """
 
     sigma: float = 5
-    slope: float = 3.5  # degrees
+    slope: float = 5  # degrees
 
 
 @dataclass
@@ -113,6 +113,8 @@ class FloorConfig:
     ----------
     max_floor_slope : float, default=None
         Cells exceeding this slope are removed from the floor
+    max_floor_slope : float, default=None
+        Holes in the floor smaller than this area are filled
     foundation : FoundationConfig
         Configuration for the Low Slope Connectivity Algorithm. Run
         help(FoundationConfig) for details
@@ -122,6 +124,7 @@ class FloorConfig:
     """
 
     max_floor_slope: Optional[float] = None
+    max_fill_area: Optional[float] = None
     foundation: FoundationConfig = field(default_factory=FoundationConfig)
     flood: FloodConfig = field(default_factory=FloodConfig)
 
