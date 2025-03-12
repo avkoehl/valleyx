@@ -27,7 +27,7 @@ def test_data():
     dem = rxr.open_rasterio(dem_path, masked=True).squeeze()
 
     # Load flowlines
-    flowlines_path = DATA_DIR / "180701020604-flowlines.shp"
+    flowlines_path = DATA_DIR / "180701020604-flowlinesmr.gpkg"
     flowlines = gpd.read_file(flowlines_path).geometry
 
     return dem, flowlines
