@@ -112,9 +112,9 @@ class FloorConfig:
     Parameters
     ----------
     max_floor_slope : float, default=None
-        Cells exceeding this slope are removed from the floor
+        Cells exceeding this slope are removed from the floor in degrees
     max_floor_slope : float, default=None
-        Holes in the floor smaller than this area are filled
+        Holes in the floor smaller than this area in meters squared are filled
     foundation : FoundationConfig
         Configuration for the Low Slope Connectivity Algorithm. Run
         help(FoundationConfig) for details
@@ -123,8 +123,8 @@ class FloorConfig:
         for details
     """
 
-    max_floor_slope: Optional[float] = None
-    max_fill_area: Optional[float] = None
+    max_floor_slope: Optional[float] = None  # degrees slope
+    max_fill_area: Optional[float] = None  # meters squared
     foundation: FoundationConfig = field(default_factory=FoundationConfig)
     flood: FloodConfig = field(default_factory=FloodConfig)
 
