@@ -22,10 +22,10 @@ def get_cross_section_lines(linestring, xs_spacing, xs_width):
     dfs = []
     for i, point in enumerate(points):
         A, B = _nearest_vertices_on_line(point, linestring)
-        end_points = _sample_points_on_perpendicular(
-            point, A, B, np.array([-width, width])
-        )
-        xs = LineString([end_points[0], end_points[1]])
+        xs, ys = _sample_points_on_perpendicular(point, A, B, np.array([-width, width]))
+        start = Point(xs[0], ys[0])
+        end = Point(xs[1], ys[1])
+        xs = LineString([start, end])
         df = pd.DataFrame(
             [{"cross_section_id": i, "center_point": point, "geometry": xs}]
         )
@@ -39,22 +39,26 @@ def get_cross_section_points(linestring, xs_spacing, xs_width, xs_point_spacing)
     points = get_points_on_linestring(linestring, xs_spacing)
     alphas = np.arange(-xs_width, xs_width + xs_point_spacing, xs_point_spacing)
 
-    # for each point sample points on either side of the linestring
-    dfs = []
-    for i, point in enumerate(points):
-        A, B = _nearest_vertices_on_line(point, linestring)
-        sampled_points = _sample_points_on_perpendicular(point, A, B, alphas)
-        df = pd.DataFrame(
-            {
-                "alpha": alphas,
-                "point": sampled_points,
-                "cross_section_id": i,
-            }
-        )
-        dfs.append(df)
+    # preallocate arrays:
+    total_xs_points = len(points) * len(alphas)
+    xsids = np.zeros(total_xs_points, dtype=np.int64)
+    all_alphas = np.zeros(total_xs_points, dtype=np.float32)
+    xs = np.zeros(total_xs_points, dtype=np.float64)
+    ys = np.zeros(total_xs_points, dtype=np.float64)
 
-    points_df = pd.concat(dfs)
-    points_df = gpd.GeoDataFrame(points_df, geometry="point")
+    # for each point sample points on either side of the linestring
+    for i, point in enumerate(points):
+        inds = np.arange(i * len(alphas), (i + 1) * len(alphas))
+        A, B = _nearest_vertices_on_line(point, linestring)
+        pxs, pys = _sample_points_on_perpendicular(point, A, B, alphas)
+        xsids[inds] = i
+        all_alphas[inds] = alphas
+        xs[inds] = pxs
+        ys[inds] = pys
+
+    df = pd.DataFrame({"cross_section_id": xsids, "alpha": all_alphas})
+    points_df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(xs, ys))
+    points_df.rename(columns={"geometry": "point"}, inplace=True)
     return points_df
 
 
@@ -94,4 +98,4 @@ def _sample_points_on_perpendicular(point, A, B, alphas):
     dy = (B.x - A.x) / length
     xs = point.x + alphas * dx
     ys = point.y + alphas * dy
-    return [Point(x, y) for x, y in zip(xs, ys)]
+    return xs, ys
