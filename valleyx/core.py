@@ -138,6 +138,7 @@ def extract_valleys(
         ta,
         config.floor.max_floor_slope,
         config.floor.max_fill_area,
+        config.floor.foundation.spatial_radius,
         config.floor.foundation.slope,
         config.floor.foundation.sigma,
         config.floor.flood.xs_spacing,

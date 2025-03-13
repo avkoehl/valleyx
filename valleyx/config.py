@@ -33,13 +33,16 @@ class FoundationConfig:
 
     Parameters
     ----------
+    spatial_radius: float, default=5
+        Radius in meters for gaussian smoothing kernel
     sigma: float, default=5
         Standard deviation for gaussian smoothing of the dem
     slope: float, default=3.5
         Maximum slope in degrees to be considered a valley floor
     """
 
-    sigma: float = 5
+    spatial_radius: float = 150  # meters
+    sigma: float = 30
     slope: float = 5  # degrees
 
 

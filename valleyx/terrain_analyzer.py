@@ -185,21 +185,31 @@ class TerrainAnalyzer:
             TerrainAnalyzer.cleanup_files(manifest)
         return hand
 
-    def elevation_derivatives(self, dem):
-        manifest = self.create_temp_raster_paths(["dem", "slope", "profile_curvature"])
+    def slope(self, dem):
+        manifest = self.create_temp_raster_paths(["dem", "slope"])
         dem.rio.to_raster(manifest["dem"])
 
         try:
             self.wbt.slope(manifest["dem"], manifest["slope"], units="degrees")
-            self.wbt.profile_curvature(manifest["dem"], manifest["profile_curvature"])
-
             slope = TerrainAnalyzer.load_raster(manifest["slope"])
-            curvature = TerrainAnalyzer.load_raster(manifest["profile_curvature"])
         except Exception as e:
-            raise ValueError(f"Error in elevation derivative workflow: {e}") from e
+            raise ValueError(f"Error in slope workflow: {e}") from e
         finally:
             TerrainAnalyzer.cleanup_files(manifest)
-        return slope, curvature
+        return slope
+
+    def curvature(self, dem):
+        manifest = self.create_temp_raster_paths(["dem", "curvature"])
+        dem.rio.to_raster(manifest["dem"])
+
+        try:
+            self.wbt.profile_curvature(manifest["dem"], manifest["curvature"])
+            curvature = TerrainAnalyzer.load_raster(manifest["curvature"])
+        except Exception as e:
+            raise ValueError(f"Error in curvature workflow: {e}") from e
+        finally:
+            TerrainAnalyzer.cleanup_files(manifest)
+        return curvature
 
     def flowpaths_to_flowlines(self, flow_paths, flow_dir):
         rasters = self.create_temp_raster_paths(["flowpaths", "flowdir"])
