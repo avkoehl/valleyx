@@ -2,6 +2,7 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 from scipy import signal
+from loguru import logger
 
 from valleyx.floor.flood_extent.split_profile import split_profile
 from valleyx.floor.flood_extent.split_profile import combine_profile
@@ -76,7 +77,15 @@ def preprocess_profiles(
 
     # Process each profile
     processed_dfs = []
-    for _, profile in xsections.groupby(["streamID", "xsID"]):
+    grouped = xsections.groupby(["streamID", "xsID"])
+    ngroups = len(grouped)
+
+    for i, (_, profile) in enumerate(grouped):
+        log_interval = max(1, ngroups // 100)
+        if i % log_interval == 0 or i == ngroups - 1:
+            percent_complete = (i + 1) / ngroups * 100
+            logger.debug(f"{percent_complete:.2f}% complete")
+
         # Apply preprocessing steps
         profile = _remove_duplicates(profile)
         if _check_width(profile, min_distance):
