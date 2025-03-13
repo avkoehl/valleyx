@@ -94,14 +94,13 @@ def label_floors(
 
     # keep only regions that are connected to the flowpath network
     combined = connected(combined, basin.flow_paths)
-    combined = combined.astype(np.uint8)
 
     # remove small regions
     # convert area to number of cells based on basin.rio.resolution
     if max_fill_area:
-        num_cells = max_fill_area / basin.dem.rio.resolution()[0] ** 2
+        num_cells = max_fill_area / (basin.dem.rio.resolution()[0] ** 2)
         num_cells = int(num_cells)
         combined.data = remove_small_holes(combined.data, num_cells)
-        combined = combined.astype(np.uint8)
 
+    combined = combined.astype(np.uint8)
     return combined, hand_thresholds, boundary_points
