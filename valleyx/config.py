@@ -1,5 +1,9 @@
+import json
+
 from dataclasses import dataclass
 from dataclasses import field
+from dataclasses import asdict
+
 from typing import Optional
 
 
@@ -159,3 +163,30 @@ class ValleyConfig:
 
     reach: ReachConfig = field(default_factory=ReachConfig)
     floor: FloorConfig = field(default_factory=FloorConfig)
+
+    def to_dict(self):
+        """Convert the entire config to a nested dictionary"""
+
+        def _convert_to_dict(obj):
+            """Helper function to recursively convert nested dataclasses to dictionaries"""
+            if hasattr(obj, "__dataclass_fields__"):
+                # It's a dataclass
+                result = {}
+                for key, value in asdict(obj).items():
+                    result[key] = _convert_to_dict(value)
+                return result
+            elif isinstance(obj, (list, tuple)):
+                # Handle lists and tuples
+                return [_convert_to_dict(item) for item in obj]
+            elif isinstance(obj, dict):
+                # Handle dictionaries
+                return {k: _convert_to_dict(v) for k, v in obj.items()}
+            else:
+                # Regular value (int, float, string, etc.)
+                return obj
+
+        return _convert_to_dict(self)
+
+    def __str__(self) -> str:
+        """Convert the config to a string"""
+        return json.dumps(self.to_dict(), indent=4)
