@@ -135,27 +135,29 @@ def extract_valleys(
 
     logger.info("Detecting valley floors")
     floor_start_time = time.time()
-    floor, hand_thresholds, boundary_points = label_floors(
-        basin,
-        ta,
-        config.floor.max_floor_slope,
-        config.floor.max_fill_area,
-        config.floor.foundation.spatial_radius,
-        config.floor.foundation.slope,
-        config.floor.foundation.sigma,
-        config.floor.flood.xs_spacing,
-        config.floor.flood.xs_max_width,
-        config.floor.flood.point_spacing,
-        config.floor.flood.min_hand_jump,
-        config.floor.flood.ratio,
-        config.floor.flood.min_peak_prominence,
-        config.floor.flood.min_distance,
-        config.floor.flood.path_length,
-        config.floor.flood.slope_threshold,
-        config.floor.flood.min_points,
-        config.floor.flood.percentile,
-        config.floor.flood.buffer,
-        config.floor.flood.default_threshold,
+    flood_floor, found_floor, combined_floor, hand_thresholds, boundary_points = (
+        label_floors(
+            basin,
+            ta,
+            config.floor.max_floor_slope,
+            config.floor.max_fill_area,
+            config.floor.foundation.spatial_radius,
+            config.floor.foundation.slope,
+            config.floor.foundation.sigma,
+            config.floor.flood.xs_spacing,
+            config.floor.flood.xs_max_width,
+            config.floor.flood.point_spacing,
+            config.floor.flood.min_hand_jump,
+            config.floor.flood.ratio,
+            config.floor.flood.min_peak_prominence,
+            config.floor.flood.min_distance,
+            config.floor.flood.path_length,
+            config.floor.flood.slope_threshold,
+            config.floor.flood.min_points,
+            config.floor.flood.percentile,
+            config.floor.flood.buffer,
+            config.floor.flood.default_threshold,
+        )
     )
     floor_end_time = time.time()
     floor_duration = floor_end_time - floor_start_time
@@ -176,12 +178,14 @@ def extract_valleys(
     logger.success("Valley extraction workflow completed")
 
     # Always return these core elements
-    required_results = (floor, basin.flowlines)
+    required_results = (combined_floor, basin.flowlines)
 
     # Optionally return debug info
     if debug_returns:
         debug_info = {
-            "labeled_floors": basin.subbasins * floor,
+            "flood_floor": flood_floor,
+            "foundation_floor": found_floor,
+            "subbasins": basin.subbasins,
             "hand_thresholds": hand_thresholds,
             "boundary_points": boundary_points,
         }

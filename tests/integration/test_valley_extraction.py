@@ -72,7 +72,7 @@ def test_valley_extraction_workflow(test_data, working_dir, config):
         config.reach.window,
     )
 
-    floor, _, _ = label_floors(
+    _, _, floor, _, _ = label_floors(
         basin,
         ta,
         config.floor.max_floor_slope,

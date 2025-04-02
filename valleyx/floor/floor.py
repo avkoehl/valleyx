@@ -103,4 +103,10 @@ def label_floors(
         combined.data = remove_small_holes(combined.data, num_cells)
 
     combined = combined.astype(np.uint8)
-    return combined, hand_thresholds, boundary_points
+    return (
+        flood_extent_floor,
+        foundation_floor,
+        combined,
+        hand_thresholds,
+        boundary_points,
+    )
