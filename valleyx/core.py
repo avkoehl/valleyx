@@ -53,6 +53,7 @@ def extract_valleys(
     flowlines: gpd.GeoSeries,
     config: ValleyConfig,
     wbt: Optional[whitebox.WhiteboxTools] = None,
+    cleanup_wbt: bool = False,
     prefix: Optional[str] = None,
     debug_returns: bool = False,
 ) -> Union[
@@ -73,6 +74,8 @@ def extract_valleys(
     wbt : WhiteboxTools, optional
         Initialized WhiteboxTools instance. If None, a new instance will be created
         with default parameters.
+    cleanup_wbt : bool, default=False
+        If True, deletes the working directory of the WhiteboxTools instance at the end
     prefix : str, optional
         Prefix for temporary files. Useful when running multiple extractions
         in parallel.
@@ -101,7 +104,6 @@ def extract_valleys(
     start_time = time.time()
     logger.info("Starting valley extraction workflow")
 
-    # Check if WhiteboxTools is available
     if wbt is None:
         working_dir = os.path.join(os.getcwd(), "whitebox_temp")
         verbose = False
@@ -167,9 +169,9 @@ def extract_valleys(
     logger.info(f"Floor detection time: {format_time_duration(floor_duration)}")
     logger.info(f"Total execution time: {format_time_duration(total_duration)}")
 
-    # cleanup
-    if os.path.exists(wbt.work_dir):
-        shutil.rmtree(wbt.work_dir)
+    if cleanup_wbt:
+        if os.path.exists(wbt.work_dir):
+            shutil.rmtree(wbt.work_dir)
 
     logger.success("Valley extraction workflow completed")
 
