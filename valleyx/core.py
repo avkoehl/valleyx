@@ -95,7 +95,9 @@ def extract_valleys(
             A tuple containing ((floors, flowlines), debug_info) where:
             - (floors, flowlines): Same as above
             - debug_info: Dict containing additional data:
-                - 'labeled_floors': Valley floors labeled with subbasin IDs
+                - 'flood_floor': just the flood extent valley floor
+                - 'foundation_floor': just the foundation floor
+                - 'subbasins': Labeled subbasins
                 - 'hand_thresholds': HAND threshold values for each reach
                 - 'boundary_points': Boundary points used for valley delineation
 
