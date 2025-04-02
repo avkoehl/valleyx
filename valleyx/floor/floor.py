@@ -103,6 +103,8 @@ def label_floors(
         combined.data = remove_small_holes(combined.data, num_cells)
 
     combined = combined.astype(np.uint8)
+    flood_extent_floor = flood_extent_floor.astype(np.uint8)
+    foundation_floor = foundation_floor.astype(np.uint8)
     return (
         flood_extent_floor,
         foundation_floor,
