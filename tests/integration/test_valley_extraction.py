@@ -93,6 +93,8 @@ def test_valley_extraction_workflow(test_data, working_dir, config):
         config.floor.flood.percentile,
         config.floor.flood.buffer,
         config.floor.flood.default_threshold,
+        config.floor.flood.spatial_radius,
+        config.floor.flood.sigma,
     )
 
     # Validation

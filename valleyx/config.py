@@ -37,16 +37,16 @@ class FoundationConfig:
 
     Parameters
     ----------
-    spatial_radius: float, default=5
+    spatial_radius: float, default=150
         Radius in meters for gaussian smoothing kernel
-    sigma: float, default=5
+    sigma: float, default=50
         Standard deviation for gaussian smoothing of the dem
-    slope: float, default=3.5
+    slope: float, default=5
         Maximum slope in degrees to be considered a valley floor
     """
 
     spatial_radius: float = 150  # meters
-    sigma: float = 30
+    sigma: float = 50
     slope: float = 5  # degrees
 
 
@@ -89,6 +89,10 @@ class FloodConfig:
         Percentile for the hand threshold
     min_points : int, default=5
         Minimum number of points to use for hand thresholding
+    spatial_radius: float, default=45
+        Radius in meters for gaussian smoothing kernel
+    sigma: float, default=15
+        Standard deviation for gaussian smoothing of the dem
     """
 
     # cross section parameters
@@ -101,6 +105,10 @@ class FloodConfig:
     ratio: float = 3.5
     min_peak_prominence: int = 20  # meters
     min_distance: int = 20  # meters
+
+    # smoothing parameters
+    spatial_radius: float = 45  # meters
+    sigma: float = 15
 
     # sustained slope parameters
     path_length: float = 50  # meters

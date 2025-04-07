@@ -34,6 +34,8 @@ def flood(
     percentile,
     buffer,
     default_threshold,
+    spatial_radius,
+    sigma,
 ):
     # create cross section profiles
     logger.debug("Creating cross section profiles")

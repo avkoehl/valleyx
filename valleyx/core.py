@@ -159,6 +159,8 @@ def extract_valleys(
             config.floor.flood.percentile,
             config.floor.flood.buffer,
             config.floor.flood.default_threshold,
+            config.floor.flood.spatial_radius,
+            config.floor.flood.sigma,
         )
     )
     floor_end_time = time.time()

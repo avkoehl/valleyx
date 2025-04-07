@@ -33,6 +33,8 @@ def label_floors(
     percentile,
     buffer,
     default_threshold,
+    fspatial_radius,
+    fsigma,
 ):
     logger.info("Labeling floors")
     logger.debug("smoothing dem with sigma: {}", sigma)
@@ -54,8 +56,13 @@ def label_floors(
     )
 
     logger.debug("computing flood extents")
-    slope = ta.slope(basin.dem)
-    curvature = ta.curvature(basin.dem)
+    smoothed_data_flood = filter_nan_gaussian_conserving(
+        basin.dem.data, fspatial_radius, basin.dem.rio.resolution()[0], fsigma
+    )
+    smoothed_flood = basin.dem.copy()
+    smoothed_flood.data = smoothed_data_flood
+    slope = ta.slope(smoothed_flood)
+    curvature = ta.curvature(smoothed_flood)
     inverted_dem = -1 * (basin.dem - basin.dem.max().item()) + basin.dem.min().item()
     max_ascent_fdir = ta.flow_pointer(inverted_dem)
     flood_extent_floor, hand_thresholds, boundary_points = flood(
@@ -76,6 +83,8 @@ def label_floors(
         percentile,
         buffer,
         default_threshold,
+        fspatial_radius,
+        fsigma,
     )
 
     combined = foundation_floor + flood_extent_floor
