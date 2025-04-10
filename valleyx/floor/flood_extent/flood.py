@@ -71,7 +71,10 @@ def flood(
         slope_threshold,
     )
     boundary_pts = xsections.loc[xsections["wallpoint"], "geom"]
-    boundary_pts = post_process_pts(boundary_pts, dataset, max_ascent_fdir)
+    if boundary_pts.empty:
+        boundary_pts = None
+    else:
+        boundary_pts = post_process_pts(boundary_pts, dataset, max_ascent_fdir)
 
     logger.debug("Determining flood extents from boundary points")
     thresholds = determine_flood_extents(
@@ -169,9 +172,6 @@ def smooth_flowlines(flowlines, flowline_smooth_tolerance=3):
 
 
 def post_process_pts(boundary_pts, dataset, fdir, dirmap=DIRMAPS["wbt"]):
-    if boundary_pts is None:
-        return None
-
     indices = [point_to_pixel(fdir, point) for point in boundary_pts]
 
     results = []
