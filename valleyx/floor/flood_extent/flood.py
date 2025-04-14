@@ -71,7 +71,10 @@ def flood(
         slope_threshold,
     )
     boundary_pts = xsections.loc[xsections["wallpoint"], "geom"]
-    boundary_pts = post_process_pts(boundary_pts, dataset, max_ascent_fdir)
+    if boundary_pts.empty:
+        boundary_pts = None
+    else:
+        boundary_pts = post_process_pts(boundary_pts, dataset, max_ascent_fdir)
 
     logger.debug("Determining flood extents from boundary points")
     thresholds = determine_flood_extents(
@@ -79,10 +82,11 @@ def flood(
         dataset["subbasin"],
         dataset["hillslope"],
         min_points,
-        default_threshold,
         percentile,
         buffer,
     )
+    if default_threshold is not None:
+        thresholds = thresholds.fillna(default_threshold)
 
     # apply flood thresholds
     logger.debug("Applying flood thresholds")
@@ -117,33 +121,35 @@ def determine_flood_extents(
     subbasins,
     hillslopes,
     min_points,
-    default_threshold,
     percentile,
     buffer,
 ):
     results = []
     for reachID in finite_unique(subbasins):
         clipped_hillslopes = hillslopes.where(subbasins == reachID)
-
         for hillslopeID in finite_unique(clipped_hillslopes):
+            result = {
+                "streamID": reachID,
+                "hillslopeID": hillslopeID,
+                "threshold": None,
+            }
             if hillslopeID == 0:
+                continue
+
+            if boundary_pts is None:
+                results.append(result)
                 continue
 
             points = boundary_pts.loc[boundary_pts["streamID"] == reachID]
             points = points.loc[points["hillslope"] == hillslopeID]
 
             if len(points) < min_points:
-                threshold = default_threshold
+                results.append(result)
             else:
                 threshold = np.quantile(points["hand"], percentile)
                 threshold = threshold + buffer
-            results.append(
-                {
-                    "streamID": reachID,
-                    "hillslopeID": hillslopeID,
-                    "threshold": threshold,
-                }
-            )
+                result["threshold"] = threshold
+                results.append(result)
     return pd.DataFrame(results)
 
 
