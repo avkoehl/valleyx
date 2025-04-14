@@ -13,10 +13,12 @@ def relabel_flowpaths(pour_points, flowpaths, flowacc):
     cells = _assign_reach_id(cells, cell_ids)
 
     new_flowpaths = flowpaths.copy()
-    for label, inds in cells.groupby("reach_id").groups.items():
+    streamID = 1
+    for _, inds in cells.groupby(["segment_id", "reach_id"]).groups.items():
         rows = cells["row"].loc[inds].values
         cols = cells["col"].loc[inds].values
-        new_flowpaths.values[rows, cols] = label
+        new_flowpaths.values[rows, cols] = streamID
+        streamID = streamID + 1
     return new_flowpaths
 
 
