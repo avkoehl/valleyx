@@ -8,7 +8,7 @@ from valleyx.reach.valley_bottoms import valley_bottoms
 from valleyx.reach.segment import segment_reaches
 from valleyx.reach.relabel_flowpaths import relabel_flowpaths
 from valleyx.reach.reach_catchments import reach_hillslopes
-from valleyx.utils.flowpaths import prep_flowlines
+from valleyx.utils.flowpaths import prep_flowlines, pour_points_from_flowpaths
 
 logger.bind(module="delineate_reaches")
 
@@ -66,8 +66,9 @@ def delineate_reaches(basin, ta, hand_threshold, spacing, minsize, window):
     basin.flowlines = prep_flowlines(
         ta.flowpaths_to_flowlines(basin.flow_paths, basin.flow_dir), basin.flow_acc
     )
+    new_pour_points = pour_points_from_flowpaths(basin.flow_paths, basin.flow_acc)
     logger.debug("compute subbasins and hillslopes")
-    basin.subbasins = ta.subbasins(basin.flow_dir, pour_points)
+    basin.subbasins = ta.subbasins(basin.flow_dir, new_pour_points)
     basin.hillslopes = reach_hillslopes(
         basin.subbasins, basin.flow_paths, basin.flow_dir, ta
     )
